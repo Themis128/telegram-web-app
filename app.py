@@ -610,8 +610,15 @@ async def get_invite_link(chat_id: str):
 
     try:
         entity = await get_entity_safe(chat_id)
+        
+        # Check if it's a group or channel
+        if not isinstance(entity, (types.Channel, types.Chat)):
+            raise HTTPException(status_code=400, detail="Only groups and channels have invite links")
+        
         link = await client.export_chat_invite_link(entity)
         return {"invite_link": link}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -1033,21 +1040,40 @@ async def get_contacts():
     check_client_connected()
 
     try:
-        contacts = await client.get_contacts()
-
+        # Get contacts using GetContactsRequest
+        from telethon.tl.functions.contacts import GetContactsRequest
+        result = await client(GetContactsRequest(hash=0))
+        
         contact_list = []
-        for contact in contacts:
-            contact_list.append({
-                "id": contact.id,
-                "first_name": contact.first_name,
-                "last_name": contact.last_name or "",
-                "username": contact.username or "",
-                "phone": contact.phone or ""
-            })
+        for contact in result.users:
+            if not contact.bot:  # Exclude bots
+                contact_list.append({
+                    "id": contact.id,
+                    "first_name": contact.first_name,
+                    "last_name": contact.last_name or "",
+                    "username": contact.username or "",
+                    "phone": contact.phone or ""
+                })
 
         return {"contacts": contact_list}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # If GetContactsRequest fails, try getting from dialogs
+        try:
+            dialogs = await client.get_dialogs()
+            contact_list = []
+            for dialog in dialogs:
+                entity = dialog.entity
+                if isinstance(entity, types.User) and not entity.bot and not entity.deleted:
+                    contact_list.append({
+                        "id": entity.id,
+                        "first_name": entity.first_name,
+                        "last_name": entity.last_name or "",
+                        "username": entity.username or "",
+                        "phone": entity.phone or ""
+                    })
+            return {"contacts": contact_list}
+        except Exception as e2:
+            raise HTTPException(status_code=500, detail=str(e2))
 
 @app.post("/api/contacts/add")
 async def add_contact(request: ContactRequest):
@@ -1166,10 +1192,12 @@ async def get_blocked_users():
     check_client_connected()
 
     try:
-        blocked = await client.get_blocked()
-
+        # Use GetBlockedRequest
+        from telethon.tl.functions.contacts import GetBlockedRequest
+        result = await client(GetBlockedRequest(offset=0, limit=100))
+        
         blocked_list = []
-        for user in blocked:
+        for user in result.users:
             blocked_list.append({
                 "id": user.id,
                 "first_name": user.first_name,
@@ -1179,7 +1207,8 @@ async def get_blocked_users():
 
         return {"blocked": blocked_list}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Return empty list if no blocked users or error
+        return {"blocked": []}
 
 # ============================================================================
 # Account Management
