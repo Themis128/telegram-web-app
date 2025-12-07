@@ -926,31 +926,157 @@ async def mark_read(chat_id: str, message_id: Optional[int] = None):
 
 @app.get("/api/files/download/{chat_id}/{message_id}")
 async def download_media(chat_id: str, message_id: int):
-    """Download media from a message"""
+    """Download media from a message with streaming support for large files"""
     check_client_connected()
 
     try:
         entity = await get_entity_safe(chat_id)
         messages = await client.get_messages(entity, ids=message_id)
 
-        if not messages or not messages[0].media:
+        if not messages:
             raise HTTPException(status_code=404, detail="Message not found or has no media")
 
-        message = messages[0]
+        # Handle both single message and list of messages
+        if isinstance(messages, list):
+            if len(messages) == 0 or not messages[0].media:
+                raise HTTPException(status_code=404, detail="Message not found or has no media")
+            message = messages[0]
+        else:
+            # Single message object returned
+            if not messages.media:
+                raise HTTPException(status_code=404, detail="Message not found or has no media")
+            message = messages
 
-        # Download to memory
-        file_bytes = await client.download_media(message, file=bytes)
+        # Determine filename and media type first
+        filename = f"file_{message_id}"
+        media_type = "application/octet-stream"
+        file_size = None
 
-        # Determine filename
-        filename = getattr(message.media, 'file_name', None) or f"file_{message_id}"
+        if isinstance(message.media, types.MessageMediaPhoto):
+            filename = f"photo_{message_id}.jpg"
+            media_type = "image/jpeg"
+            # Get photo size
+            if hasattr(message.media, 'photo') and hasattr(message.media.photo, 'sizes'):
+                if message.media.photo.sizes:
+                    file_size = message.media.photo.sizes[-1].size
+        elif isinstance(message.media, types.MessageMediaDocument):
+            doc = message.media.document
+            if hasattr(doc, 'mime_type') and doc.mime_type:
+                media_type = doc.mime_type
+            if hasattr(doc, 'size'):
+                file_size = doc.size
 
-        return StreamingResponse(
-            io.BytesIO(file_bytes),
-            media_type="application/octet-stream",
-            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
-        )
+            # Get filename from document attributes
+            if hasattr(doc, 'attributes') and doc.attributes:
+                for attr in doc.attributes:
+                    if isinstance(attr, types.DocumentAttributeFilename):
+                        filename = attr.file_name
+                        break
+                    elif isinstance(attr, types.DocumentAttributeAudio):
+                        if hasattr(attr, 'title') and attr.title:
+                            filename = f"{attr.title}.mp3"
+                        else:
+                            filename = f"audio_{message_id}.mp3"
+                        break
+                    elif isinstance(attr, types.DocumentAttributeVideo):
+                        if not filename or filename == f"file_{message_id}":
+                            filename = f"video_{message_id}.mp4"
+                        break
+
+        # Sanitize filename
+        import re
+        filename = re.sub(r'[<>:"/\\|?*]', '_', filename)
+        if not filename or filename.strip() == '':
+            filename = f"file_{message_id}"
+
+        # Download file with progress callback support
+        # Use temporary file for large files to avoid memory issues
+        file_bytes = None
+        temp_file = None
+        
+        try:
+            # For very large files (>50MB), use temporary file
+            if file_size and file_size > 50 * 1024 * 1024:  # 50MB
+                import tempfile
+                import os
+                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=f"_{filename}")
+                temp_path = temp_file.name
+                temp_file.close()
+                
+                # Download to file
+                await client.download_media(message, file=temp_path)
+                
+                # Stream from file
+                async def generate():
+                    """Stream file from disk in chunks"""
+                    chunk_size = 1024 * 1024  # 1MB chunks
+                    with open(temp_path, 'rb') as f:
+                        while True:
+                            chunk = f.read(chunk_size)
+                            if not chunk:
+                                break
+                            yield chunk
+                    # Clean up temp file
+                    try:
+                        os.unlink(temp_path)
+                    except:
+                        pass
+                
+                headers = {
+                    "Content-Disposition": f'attachment; filename="{filename}"',
+                    "Content-Type": media_type,
+                    "Accept-Ranges": "bytes"
+                }
+                if file_size:
+                    headers["Content-Length"] = str(file_size)
+                
+                return StreamingResponse(
+                    generate(),
+                    media_type=media_type,
+                    headers=headers
+                )
+            else:
+                # For smaller files, download to memory
+                file_bytes = await client.download_media(message, file=bytes)
+                
+                # Stream in chunks for better memory management
+                async def generate():
+                    """Stream file in chunks"""
+                    chunk_size = 1024 * 1024  # 1MB chunks
+                    for i in range(0, len(file_bytes), chunk_size):
+                        yield file_bytes[i:i + chunk_size]
+                
+                headers = {
+                    "Content-Disposition": f'attachment; filename="{filename}"',
+                    "Content-Type": media_type,
+                    "Accept-Ranges": "bytes"
+                }
+                if file_size:
+                    headers["Content-Length"] = str(len(file_bytes))
+                elif file_bytes:
+                    headers["Content-Length"] = str(len(file_bytes))
+                
+                return StreamingResponse(
+                    generate(),
+                    media_type=media_type,
+                    headers=headers
+                )
+        except Exception as download_error:
+            # Clean up temp file on error
+            if temp_file:
+                try:
+                    import os
+                    os.unlink(temp_file.name)
+                except:
+                    pass
+            raise download_error
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        print(f"Download error: {e}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Download failed: {str(e)}")
 
 @app.get("/api/files/preview/{chat_id}/{message_id}")
 async def preview_media(chat_id: str, message_id: int):
@@ -961,13 +1087,29 @@ async def preview_media(chat_id: str, message_id: int):
         entity = await get_entity_safe(chat_id)
         messages = await client.get_messages(entity, ids=message_id)
 
-        if not messages or not messages[0].media:
-            raise HTTPException(status_code=404, detail="Message not found or has no media")
+        if not messages:
+            raise HTTPException(status_code=404, detail="Message not found")
 
-        message = messages[0]
+        # Handle both single message and list of messages
+        if isinstance(messages, list):
+            if len(messages) == 0:
+                raise HTTPException(status_code=404, detail="Message not found")
+            message = messages[0]
+        else:
+            # Single message object returned
+            message = messages
+
+        if not message.media:
+            raise HTTPException(status_code=404, detail="Message has no media")
 
         # Download to memory
-        file_bytes = await client.download_media(message, file=bytes)
+        try:
+            file_bytes = await client.download_media(message, file=bytes)
+            if not file_bytes:
+                raise HTTPException(status_code=500, detail="Failed to download media")
+        except Exception as download_error:
+            print(f"Error downloading media: {download_error}")
+            raise HTTPException(status_code=500, detail=f"Failed to download media: {str(download_error)}")
 
         # Determine media type and filename
         media_type = "application/octet-stream"
@@ -995,11 +1137,18 @@ async def preview_media(chat_id: str, message_id: int):
             media_type=media_type,
             headers={
                 "Content-Disposition": f'inline; filename="{filename}"',
-                "Cache-Control": "public, max-age=3600"
+                "Cache-Control": "public, max-age=3600",
+                "Access-Control-Allow-Origin": "*"
             }
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        error_msg = str(e)
+        print(f"Error in preview_media: {error_msg}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Error loading media: {error_msg}")
 
 # ============================================================================
 # Search

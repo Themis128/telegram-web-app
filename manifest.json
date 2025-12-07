@@ -2,12 +2,13 @@
   "name": "Telegram Web App",
   "short_name": "Telegram",
   "description": "Full-featured Telegram client with MTProto API capabilities",
-  "start_url": "/",
+  "start_url": "/?v=2025.12.07.2346",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3390ec",
   "orientation": "portrait-primary",
   "scope": "/",
+  "version": "2025.12.07.2346",
   "icons": [
     {
       "src": "/icon-192.png",

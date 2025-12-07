@@ -362,6 +362,10 @@
             max-width: 100%;
         }
 
+        .message-media {
+            position: relative;
+        }
+
         .message-media img {
             max-width: 100%;
             height: auto;
@@ -373,6 +377,65 @@
 
         .message-media img:hover {
             transform: scale(1.02);
+        }
+
+        .media-download-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: background 0.2s;
+            z-index: 10;
+        }
+
+        .media-download-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        .message-media:hover .media-download-btn {
+            display: flex;
+        }
+
+        .audio-download-btn {
+            background: var(--tg-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 8px;
+            transition: background 0.2s;
+        }
+
+        .audio-download-btn:hover {
+            background: var(--tg-blue-hover);
+        }
+
+        .media-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            color: var(--tg-text-secondary);
+        }
+
+        .media-error {
+            padding: 20px;
+            text-align: center;
+            color: var(--tg-text-secondary);
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
         }
 
         .message-media video {
@@ -1005,6 +1068,19 @@
         </div>
     </div>
 
+    <!-- Media Viewer Modal -->
+    <div class="modal" id="mediaViewerModal" style="background: rgba(0, 0, 0, 0.95);">
+        <div class="modal-content" style="max-width: 95vw; max-height: 95vh; padding: 0; background: transparent;">
+            <div style="position: absolute; top: 10px; right: 10px; z-index: 10; display: flex; gap: 10px;">
+                <button class="modal-btn modal-btn-primary" onclick="downloadCurrentMedia()" style="background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.3);">⬇️ Download</button>
+                <button class="modal-close" onclick="closeModal('mediaViewerModal')" style="background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.3);">✕</button>
+            </div>
+            <div id="mediaViewerContent" style="display: flex; align-items: center; justify-content: center; min-height: 80vh;">
+                <div class="loading" style="color: white;">Loading...</div>
+            </div>
+        </div>
+    </div>
+
     <div class="app-container">
         <!-- Sidebar -->
         <div class="sidebar">
@@ -1104,16 +1180,65 @@
             document.getElementById('pwaInstallBanner').classList.remove('show');
         }
 
-        // Service Worker Registration
+        // Service Worker Registration with Auto-Update
+        let swRegistration = null;
+
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
+                navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
                     .then((registration) => {
+                        swRegistration = registration;
                         console.log('SW registered:', registration);
+
+                        // Check for updates immediately
+                        registration.update();
+
+                        // Check for updates every 60 seconds
+                        setInterval(() => {
+                            registration.update();
+                        }, 60000);
+
+                        // Listen for service worker updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            console.log('New service worker found, installing...');
+
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // New service worker is ready
+                                    console.log('New service worker installed, reloading...');
+                                    showNotification('App updated! Reloading...');
+                                    setTimeout(() => {
+                                        window.location.reload();
+                                    }, 1000);
+                                }
+                            });
+                        });
                     })
                     .catch((error) => {
                         console.log('SW registration failed:', error);
                     });
+
+                // Listen for messages from service worker
+                navigator.serviceWorker.addEventListener('message', (event) => {
+                    if (event.data && event.data.type === 'SW_UPDATED') {
+                        console.log('Service worker updated to version:', event.data.version);
+                        showNotification('App updated! Reloading...');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    }
+                });
+
+                // Handle service worker controller change (when new SW takes control)
+                let refreshing = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (!refreshing) {
+                        refreshing = true;
+                        console.log('New service worker controlling, reloading...');
+                        window.location.reload();
+                    }
+                });
             });
         }
 
@@ -1165,11 +1290,13 @@
             }
         }
 
-        function showNotification(message) {
+        function showNotification(message, duration = 3000, autoHide = true) {
             const notification = document.getElementById('notification');
             notification.textContent = message;
             notification.classList.add('show');
-            setTimeout(() => notification.classList.remove('show'), 3000);
+            if (autoHide) {
+                setTimeout(() => notification.classList.remove('show'), duration);
+            }
         }
 
         // Status Check
@@ -1339,7 +1466,8 @@
                     case 'image':
                         mediaHTML = `
                             <div class="message-media">
-                                <img src="${mediaUrl}" alt="Photo" onclick="window.open('${mediaUrl}', '_blank')" loading="lazy">
+                                <img src="${mediaUrl}" alt="Photo" onclick="openMediaViewer('${mediaUrl}', '${downloadUrl}', 'image', '${msg.file_name || 'photo'}')" loading="lazy" onerror="handleImageError(this, '${mediaUrl}')">
+                                <button class="media-download-btn" onclick="event.stopPropagation(); downloadFile('${downloadUrl}', '${msg.file_name || 'photo.jpg'}')" title="Download">⬇️</button>
                             </div>
                         `;
                         break;
@@ -1348,10 +1476,11 @@
                         const videoStyle = msg.media_category === 'video_note' ? 'border-radius: 50%; width: 200px; height: 200px; object-fit: cover;' : '';
                         mediaHTML = `
                             <div class="message-media">
-                                <video controls preload="metadata" onclick="this.paused ? this.play() : this.pause()" style="${videoStyle}">
+                                <video controls preload="metadata" onclick="openMediaViewer('${mediaUrl}', '${downloadUrl}', 'video', '${msg.file_name || 'video'}')" style="${videoStyle}">
                                     <source src="${mediaUrl}" type="${msg.mime_type || 'video/mp4'}">
                                     Your browser does not support video playback.
                                 </video>
+                                <button class="media-download-btn" onclick="event.stopPropagation(); downloadFile('${downloadUrl}', '${msg.file_name || 'video.mp4'}')" title="Download">⬇️</button>
                             </div>
                         `;
                         break;
@@ -1362,6 +1491,7 @@
                                     <source src="${mediaUrl}" type="${msg.mime_type || 'audio/mpeg'}">
                                     Your browser does not support audio playback.
                                 </audio>
+                                <button class="audio-download-btn" onclick="downloadFile('${downloadUrl}', '${msg.file_name || 'audio.mp3'}')" title="Download">⬇️ Download</button>
                             </div>
                         `;
                         break;
@@ -1369,7 +1499,7 @@
                         const fileName = msg.file_name || 'Document';
                         const fileIcon = getFileIcon(fileName);
                         mediaHTML = `
-                            <div class="message-media-document" onclick="window.open('${downloadUrl}', '_blank')">
+                            <div class="message-media-document" onclick="downloadFile('${downloadUrl}', '${fileName}')">
                                 <div class="message-media-icon">${fileIcon}</div>
                                 <div class="message-media-info">
                                     <div class="message-media-filename">${fileName}</div>
@@ -1400,7 +1530,7 @@
                         break;
                     default:
                         mediaHTML = `
-                            <div class="message-media-document" onclick="window.open('${downloadUrl}', '_blank')">
+                            <div class="message-media-document" onclick="downloadFile('${downloadUrl}', '${msg.file_name || 'file'}')">
                                 <div class="message-media-icon">📎</div>
                                 <div class="message-media-info">
                                     <div class="message-media-filename">Media file</div>
@@ -1980,6 +2110,211 @@
                 }
             } catch (error) {
                 showNotification('Error: ' + error.message);
+            }
+        }
+
+        // Media Viewer Functions
+        let currentMediaViewer = {
+            url: null,
+            downloadUrl: null,
+            type: null,
+            filename: null
+        };
+
+        function openMediaViewer(mediaUrl, downloadUrl, mediaType, filename) {
+            currentMediaViewer.url = mediaUrl;
+            currentMediaViewer.downloadUrl = downloadUrl;
+            currentMediaViewer.type = mediaType;
+            currentMediaViewer.filename = filename;
+
+            const content = document.getElementById('mediaViewerContent');
+            content.innerHTML = '<div class="loading" style="color: white;">Loading...</div>';
+
+            openModal('mediaViewerModal');
+
+            if (mediaType === 'image') {
+                const img = document.createElement('img');
+                img.src = mediaUrl;
+                img.style.maxWidth = '100%';
+                img.style.maxHeight = '95vh';
+                img.style.objectFit = 'contain';
+                img.onerror = async () => {
+                    try {
+                        const response = await fetch(mediaUrl);
+                        const errorText = await response.text();
+                        content.innerHTML = `<div class="media-error" style="color: white;">Failed to load image (${response.status})<br><small>${errorText.substring(0, 150)}</small></div>`;
+                    } catch (error) {
+                        content.innerHTML = `<div class="media-error" style="color: white;">Failed to load image<br><small>${error.message}</small></div>`;
+                    }
+                };
+                content.innerHTML = '';
+                content.appendChild(img);
+            } else if (mediaType === 'video') {
+                const video = document.createElement('video');
+                video.src = mediaUrl;
+                video.controls = true;
+                video.style.maxWidth = '100%';
+                video.style.maxHeight = '95vh';
+                video.onerror = () => {
+                    content.innerHTML = '<div class="media-error" style="color: white;">Failed to load video</div>';
+                };
+                content.innerHTML = '';
+                content.appendChild(video);
+            }
+        }
+
+        function downloadCurrentMedia() {
+            if (currentMediaViewer.downloadUrl) {
+                downloadFile(currentMediaViewer.downloadUrl, currentMediaViewer.filename);
+            }
+        }
+
+        // Handle image loading errors
+        async function handleImageError(imgElement, mediaUrl) {
+            console.error('Image load error for:', mediaUrl);
+            const parent = imgElement.parentElement;
+
+            // Try to get more info about the error
+            try {
+                const response = await fetch(mediaUrl);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    parent.innerHTML = `<div class="media-error">Failed to load image (${response.status}): ${errorText.substring(0, 100)}</div>`;
+                } else {
+                    parent.innerHTML = '<div class="media-error">Failed to load image. Try downloading instead.</div>';
+                }
+            } catch (error) {
+                parent.innerHTML = `<div class="media-error">Failed to load image: ${error.message}<br><small>Click download button to save the file</small></div>`;
+            }
+        }
+
+        // Download progress tracking
+        let downloadProgress = {};
+        
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+        
+        function formatTime(seconds) {
+            if (seconds < 60) return Math.round(seconds) + 's';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.round(seconds % 60);
+            return mins + 'm ' + secs + 's';
+        }
+
+        async function downloadFile(url, filename) {
+            const downloadId = `${url}_${Date.now()}`;
+            
+            try {
+                // Show initial notification
+                showNotification(`Preparing download: ${filename}...`, 2000);
+                
+                // Use XMLHttpRequest for progress tracking
+                return new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('GET', url, true);
+                    xhr.responseType = 'blob';
+                    
+                    // Track download progress
+                    xhr.addEventListener('progress', (event) => {
+                        if (event.lengthComputable) {
+                            const percentComplete = (event.loaded / event.total) * 100;
+                            const downloaded = formatBytes(event.loaded);
+                            const total = formatBytes(event.total);
+                            const speed = event.loaded / ((Date.now() - downloadProgress[downloadId]?.startTime) / 1000);
+                            const remaining = (event.total - event.loaded) / speed;
+                            
+                            if (!downloadProgress[downloadId]) {
+                                downloadProgress[downloadId] = {
+                                    startTime: Date.now(),
+                                    lastUpdate: Date.now(),
+                                    lastLoaded: 0
+                                };
+                            }
+                            
+                            downloadProgress[downloadId].lastUpdate = Date.now();
+                            downloadProgress[downloadId].lastLoaded = event.loaded;
+                            
+                    // Update notification every 500ms to avoid spam
+                    const now = Date.now();
+                    if (!downloadProgress[downloadId].lastNotification || 
+                        now - downloadProgress[downloadId].lastNotification > 500) {
+                        const speedStr = formatBytes(speed) + '/s';
+                        const etaStr = remaining > 0 && remaining < 3600 ? ` (ETA: ${formatTime(remaining)})` : '';
+                        const notification = document.getElementById('notification');
+                        notification.textContent = `Downloading: ${Math.round(percentComplete)}% (${downloaded} / ${total}) ${speedStr}${etaStr}`;
+                        notification.className = 'notification show progress';
+                        downloadProgress[downloadId].lastNotification = now;
+                    }
+                        }
+                    });
+                    
+                    xhr.addEventListener('load', () => {
+                        if (xhr.status === 200) {
+                            const blob = xhr.response;
+                            const downloadUrl = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = downloadUrl;
+                            a.download = filename || 'download';
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            window.URL.revokeObjectURL(downloadUrl);
+                            
+                            // Clean up progress tracking
+                            delete downloadProgress[downloadId];
+                            
+                            const notification = document.getElementById('notification');
+                            notification.textContent = `✓ Download complete: ${filename}`;
+                            notification.className = 'notification show success';
+                            setTimeout(() => notification.classList.remove('show'), 3000);
+                            resolve();
+                        } else {
+                            const errorText = xhr.responseText || `HTTP ${xhr.status}`;
+                            delete downloadProgress[downloadId];
+                            const notification = document.getElementById('notification');
+                            notification.textContent = `✗ Download failed: ${errorText.substring(0, 100)}`;
+                            notification.className = 'notification show error';
+                            setTimeout(() => notification.classList.remove('show'), 5000);
+                            reject(new Error(`Download failed: ${xhr.status}`));
+                        }
+                    });
+                    
+                    xhr.addEventListener('error', () => {
+                        delete downloadProgress[downloadId];
+                        const notification = document.getElementById('notification');
+                        notification.textContent = '✗ Download failed: Network error';
+                        notification.className = 'notification show error';
+                        setTimeout(() => notification.classList.remove('show'), 5000);
+                        reject(new Error('Network error'));
+                    });
+                    
+                    xhr.addEventListener('abort', () => {
+                        delete downloadProgress[downloadId];
+                        showNotification('Download cancelled', 3000);
+                        reject(new Error('Download cancelled'));
+                    });
+                    
+                    // Start download
+                    downloadProgress[downloadId] = {
+                        startTime: Date.now(),
+                        lastUpdate: Date.now(),
+                        lastLoaded: 0,
+                        lastNotification: 0
+                    };
+                    xhr.send();
+                });
+            } catch (error) {
+                delete downloadProgress[downloadId];
+                const notification = document.getElementById('notification');
+                notification.textContent = `✗ Download failed: ${error.message}`;
+                notification.className = 'notification show error';
+                setTimeout(() => notification.classList.remove('show'), 5000);
+                throw error;
             }
         }
 
