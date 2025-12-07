@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Telegram session files (stored in data/)
+data/*.session
+data/*.session-journal
+*.session
+*.session-journal
+telegram_session_*
+
+# Environment variables
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs (stored in logs/)
+logs/
+*.log
+debug.log
+
+# Data directory (keep structure but ignore session files)
+data/
+!data/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE and Editor files
+.cursor/
+.deno_lsp/
+.goosy/
+*.code-workspace
+
+# Temporary files
+*.tmp
+*.temp

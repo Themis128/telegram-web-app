@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Icon Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .icon-preview {
+            display: inline-block;
+            margin: 20px;
+            text-align: center;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Telegram Web App Icon Generator</h1>
+    <p>This will generate PWA icons. Open browser console to download.</p>
+
+    <div class="icon-preview">
+        <h3>192x192</h3>
+        <canvas id="icon192" width="192" height="192"></canvas>
+    </div>
+
+    <div class="icon-preview">
+        <h3>512x512</h3>
+        <canvas id="icon512" width="512" height="512"></canvas>
+    </div>
+
+    <script>
+        function createIcon(size) {
+            const canvas = document.getElementById(`icon${size}`);
+            const ctx = canvas.getContext('2d');
+
+            // Background gradient (Telegram blue)
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#3390ec');
+            gradient.addColorStop(1, '#0088cc');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+
+            // Draw Telegram paper plane icon
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+
+            // Simplified paper plane shape
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const scale = size / 200;
+
+            // Draw plane body
+            ctx.moveTo(centerX - 40 * scale, centerY - 20 * scale);
+            ctx.lineTo(centerX + 60 * scale, centerY);
+            ctx.lineTo(centerX - 40 * scale, centerY + 20 * scale);
+            ctx.lineTo(centerX - 20 * scale, centerY);
+            ctx.closePath();
+            ctx.fill();
+
+            // Draw wing
+            ctx.beginPath();
+            ctx.moveTo(centerX - 20 * scale, centerY);
+            ctx.lineTo(centerX + 20 * scale, centerY - 15 * scale);
+            ctx.lineTo(centerX + 20 * scale, centerY + 15 * scale);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function downloadIcon(size) {
+            const canvas = document.getElementById(`icon${size}`);
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `icon-${size}.png`;
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        // Generate icons
+        createIcon(192);
+        createIcon(512);
+
+        // Auto download after generation
+        setTimeout(() => {
+            downloadIcon(192);
+            setTimeout(() => downloadIcon(512), 500);
+        }, 1000);
+
+        console.log('Icons generated! Check downloads folder.');
+    </script>
+</body>
+</html>

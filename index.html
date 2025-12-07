@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Full-featured Telegram client with MTProto API capabilities">
+    <meta name="theme-color" content="#3390ec">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Telegram">
+
+    <title>Telegram Web App</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --tg-blue: #3390ec;
+            --tg-blue-hover: #2b7fd4;
+            --tg-dark: #212121;
+            --tg-dark-secondary: #2b2b2b;
+            --tg-light: #ffffff;
+            --tg-light-secondary: #f0f0f0;
+            --tg-border: #e4e4e4;
+            --tg-text-primary: #000000;
+            --tg-text-secondary: #707579;
+            --tg-message-out: #e7f3ff;
+            --tg-message-in: #ffffff;
+            --tg-shadow: rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--tg-light-secondary);
+            height: 100vh;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            background: var(--tg-light);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 420px;
+            background: var(--tg-light);
+            border-right: 1px solid var(--tg-border);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .sidebar-header {
+            padding: 12px 16px;
+            background: var(--tg-light);
+            border-bottom: 1px solid var(--tg-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 60px;
+        }
+
+        .sidebar-header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--tg-text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: transparent;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--tg-text-secondary);
+            transition: background 0.2s;
+        }
+
+        .btn-icon:hover {
+            background: var(--tg-light-secondary);
+        }
+
+        .search-box {
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--tg-border);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 20px;
+            background: var(--tg-light-secondary);
+            font-size: 14px;
+            outline: none;
+            transition: background 0.2s;
+        }
+
+        .search-input:focus {
+            background: #e8e8e8;
+        }
+
+        .status-bar {
+            padding: 8px 16px;
+            font-size: 12px;
+            color: var(--tg-text-secondary);
+            background: var(--tg-light-secondary);
+            border-bottom: 1px solid var(--tg-border);
+        }
+
+        .status-bar.connected {
+            color: #27ae60;
+        }
+
+        .status-bar.disconnected {
+            color: #e74c3c;
+        }
+
+        .auth-container {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .auth-form {
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        .auth-form input {
+            width: 100%;
+            padding: 12px 16px;
+            margin: 8px 0;
+            border: 1px solid var(--tg-border);
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .auth-form input:focus {
+            border-color: var(--tg-blue);
+        }
+
+        .auth-form button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 12px;
+            background: var(--tg-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .auth-form button:hover {
+            background: var(--tg-blue-hover);
+        }
+
+        .chat-list {
+            flex: 1;
+            overflow-y: auto;
+            background: var(--tg-light);
+        }
+
+        .chat-item {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid var(--tg-border);
+        }
+
+        .chat-item:hover {
+            background: var(--tg-light-secondary);
+        }
+
+        .chat-item.active {
+            background: var(--tg-light-secondary);
+        }
+
+        .chat-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--tg-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .chat-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chat-name {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--tg-text-primary);
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-preview {
+            font-size: 14px;
+            color: var(--tg-text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .chat-time {
+            font-size: 12px;
+            color: var(--tg-text-secondary);
+        }
+
+        .chat-unread {
+            background: var(--tg-blue);
+            color: white;
+            border-radius: 12px;
+            padding: 2px 6px;
+            font-size: 11px;
+            font-weight: 600;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--tg-light-secondary);
+            height: 100vh;
+        }
+
+        .chat-header {
+            padding: 12px 20px;
+            background: var(--tg-light);
+            border-bottom: 1px solid var(--tg-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 60px;
+        }
+
+        .chat-header-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .chat-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--tg-text-primary);
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: var(--tg-light-secondary);
+        }
+
+        .message {
+            max-width: 65%;
+            padding: 8px 12px;
+            border-radius: 12px;
+            word-wrap: break-word;
+            position: relative;
+            animation: fadeIn 0.2s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.outgoing {
+            align-self: flex-end;
+            background: var(--tg-message-out);
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.incoming {
+            align-self: flex-start;
+            background: var(--tg-message-in);
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 2px var(--tg-shadow);
+        }
+
+        .message-text {
+            font-size: 14px;
+            line-height: 1.4;
+            color: var(--tg-text-primary);
+            margin-bottom: 4px;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: var(--tg-text-secondary);
+            text-align: right;
+            margin-top: 4px;
+        }
+
+        .message-actions {
+            position: absolute;
+            top: -35px;
+            right: 0;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 2px 12px var(--tg-shadow);
+            display: none;
+            padding: 4px;
+            gap: 4px;
+        }
+
+        .message:hover .message-actions {
+            display: flex;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            background: transparent;
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--tg-text-secondary);
+            transition: background 0.2s;
+        }
+
+        .action-btn:hover {
+            background: var(--tg-light-secondary);
+        }
+
+        .input-area {
+            padding: 12px 20px;
+            background: var(--tg-light);
+            border-top: 1px solid var(--tg-border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--tg-light-secondary);
+            border-radius: 24px;
+            padding: 8px 16px;
+        }
+
+        .input-area input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+            outline: none;
+            color: var(--tg-text-primary);
+        }
+
+        .input-area input::placeholder {
+            color: var(--tg-text-secondary);
+        }
+
+        .attach-btn, .send-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: var(--tg-blue);
+            color: white;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .attach-btn {
+            background: transparent;
+            color: var(--tg-text-secondary);
+        }
+
+        .attach-btn:hover {
+            background: var(--tg-light-secondary);
+        }
+
+        .send-btn:hover {
+            background: var(--tg-blue-hover);
+        }
+
+        .send-btn:disabled {
+            background: var(--tg-text-secondary);
+            cursor: not-allowed;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* PWA Install Banner */
+        .pwa-install-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px var(--tg-shadow);
+            display: none;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            max-width: 90%;
+        }
+
+        .pwa-install-banner.show {
+            display: flex;
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .pwa-install-banner button {
+            padding: 8px 16px;
+            background: var(--tg-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .pwa-install-banner .close {
+            background: transparent;
+            color: var(--tg-text-secondary);
+            padding: 4px;
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--tg-dark);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px var(--tg-shadow);
+            z-index: 1000;
+            display: none;
+            animation: slideIn 0.3s;
+        }
+
+        .notification.show {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Empty State */
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--tg-text-secondary);
+            padding: 40px;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--tg-text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+            }
+
+            .app-container {
+                flex-direction: column;
+            }
+
+            .main-content {
+                display: none;
+            }
+
+            .main-content.active {
+                display: flex;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="notification" id="notification"></div>
+    <div class="pwa-install-banner" id="pwaInstallBanner">
+        <span>Install Telegram Web App for better experience</span>
+        <button onclick="installPWA()">Install</button>
+        <button class="close" onclick="dismissPWA()">✕</button>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>📱 Telegram</h1>
+                <div class="header-actions">
+                    <button class="btn-icon" onclick="loadChats()" title="Refresh">🔄</button>
+                    <button class="btn-icon" onclick="showSearch()" title="Search">🔍</button>
+                    <button class="btn-icon" onclick="showSettings()" title="Settings">⚙️</button>
+                </div>
+            </div>
+
+            <div class="status-bar disconnected" id="statusBar">Disconnected</div>
+
+            <div id="authContainer" class="auth-container">
+                <div class="auth-form">
+                    <input type="text" id="codeInput" placeholder="Enter verification code" autocomplete="one-time-code">
+                    <input type="password" id="passwordInput" placeholder="2FA Password (if needed)" class="hidden" autocomplete="current-password">
+                    <button onclick="authenticate()">Authenticate</button>
+                </div>
+            </div>
+
+            <div class="search-box hidden" id="searchBox">
+                <input type="text" class="search-input" placeholder="Search chats..." id="searchInput">
+            </div>
+
+            <div class="chat-list" id="chatList">
+                <div class="loading">Loading chats...</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <div class="chat-header">
+                <div class="chat-header-info">
+                    <h2 id="chatTitle">Select a chat</h2>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-icon" onclick="showChatInfo()" title="Chat Info">ℹ️</button>
+                </div>
+            </div>
+
+            <div class="messages-container" id="messagesContainer">
+                <div class="empty-state">
+                    <div class="empty-state-icon">💬</div>
+                    <p>Select a chat to start messaging</p>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <input type="file" id="fileInput" class="file-input" accept="image/*,video/*,audio/*,.pdf,.doc,.docx" onchange="handleFileSelect(event)">
+                <div class="input-wrapper">
+                    <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="Attach file">📎</button>
+                    <input type="text" id="messageInput" placeholder="Type a message..." disabled>
+                </div>
+                <button class="send-btn" id="sendButton" onclick="sendMessage()" disabled>➤</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+        const WS_URL = API_URL.replace('http://', 'ws://').replace('https://', 'wss://');
+        let currentChatId = null;
+        let isAuthenticated = false;
+        let ws = null;
+        let messagesMap = new Map();
+        let deferredPrompt = null;
+
+        // PWA Installation
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const banner = document.getElementById('pwaInstallBanner');
+            if (!localStorage.getItem('pwaDismissed')) {
+                setTimeout(() => banner.classList.add('show'), 3000);
+            }
+        });
+
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        showNotification('App installed successfully!');
+                    }
+                    deferredPrompt = null;
+                    document.getElementById('pwaInstallBanner').classList.remove('show');
+                });
+            }
+        }
+
+        function dismissPWA() {
+            localStorage.setItem('pwaDismissed', 'true');
+            document.getElementById('pwaInstallBanner').classList.remove('show');
+        }
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('SW registered:', registration);
+                    })
+                    .catch((error) => {
+                        console.log('SW registration failed:', error);
+                    });
+            });
+        }
+
+        // WebSocket Connection
+        function connectWebSocket() {
+            if (ws && ws.readyState === WebSocket.OPEN) return;
+
+            ws = new WebSocket(`${WS_URL}/ws`);
+
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                showNotification('Real-time updates connected');
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleWebSocketMessage(data);
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket disconnected, reconnecting...');
+                setTimeout(connectWebSocket, 3000);
+            };
+        }
+
+        function handleWebSocketMessage(data) {
+            switch(data.type) {
+                case 'new_message':
+                    if (data.chat_id === currentChatId) {
+                        addMessageToUI(data.message);
+                        showNotification('New message');
+                    }
+                    loadChats();
+                    break;
+                case 'message_edited':
+                    if (data.chat_id === currentChatId) {
+                        updateMessageInUI(data.message);
+                    }
+                    break;
+                case 'message_deleted':
+                    if (data.chat_id === currentChatId) {
+                        data.deleted_ids.forEach(id => removeMessageFromUI(id));
+                    }
+                    break;
+            }
+        }
+
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            setTimeout(() => notification.classList.remove('show'), 3000);
+        }
+
+        // Status Check
+        async function checkStatus() {
+            try {
+                const response = await fetch(`${API_URL}/api/status`);
+                const data = await response.json();
+
+                const statusBar = document.getElementById('statusBar');
+                const authContainer = document.getElementById('authContainer');
+
+                if (data.status === 'connected') {
+                    statusBar.textContent = `Connected as ${data.user.first_name || data.user.username}`;
+                    statusBar.className = 'status-bar connected';
+                    authContainer.classList.add('hidden');
+                    isAuthenticated = true;
+                    loadChats();
+                    connectWebSocket();
+                } else {
+                    statusBar.textContent = 'Disconnected';
+                    statusBar.className = 'status-bar disconnected';
+                    authContainer.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error checking status:', error);
+            }
+        }
+
+        // Authentication
+        async function authenticate() {
+            const code = document.getElementById('codeInput').value;
+            const passwordInput = document.getElementById('passwordInput');
+            const password = passwordInput.value;
+
+            if (!code) {
+                showNotification('Please enter verification code');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/authenticate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, password: password || null })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'password_required') {
+                    passwordInput.classList.remove('hidden');
+                    showNotification('2FA password required');
+                    return;
+                }
+
+                if (data.status === 'success') {
+                    isAuthenticated = true;
+                    document.getElementById('authContainer').classList.add('hidden');
+                    checkStatus();
+                    connectWebSocket();
+                } else {
+                    showNotification('Authentication failed');
+                }
+            } catch (error) {
+                showNotification('Error: ' + error.message);
+            }
+        }
+
+        // Load Chats
+        async function loadChats() {
+            try {
+                const response = await fetch(`${API_URL}/api/chats?limit=100`);
+                const data = await response.json();
+
+                const chatList = document.getElementById('chatList');
+                chatList.innerHTML = '';
+
+                if (data.chats && data.chats.length > 0) {
+                    data.chats.forEach(chat => {
+                        const chatItem = document.createElement('div');
+                        chatItem.className = 'chat-item';
+                        chatItem.onclick = () => selectChat(chat.id, chat.name);
+
+                        const avatar = chat.name.charAt(0).toUpperCase();
+                        const unread = chat.unread_count > 0 ? `<div class="chat-unread">${chat.unread_count}</div>` : '';
+
+                        chatItem.innerHTML = `
+                            <div class="chat-avatar">${avatar}</div>
+                            <div class="chat-info">
+                                <div class="chat-name">${chat.name}</div>
+                                <div class="chat-preview">${chat.last_message || 'No messages'}</div>
+                            </div>
+                            <div class="chat-meta">
+                                ${unread}
+                            </div>
+                        `;
+                        chatList.appendChild(chatItem);
+                    });
+                } else {
+                    chatList.innerHTML = '<div class="loading">No chats found</div>';
+                }
+            } catch (error) {
+                console.error('Error loading chats:', error);
+            }
+        }
+
+        // Select Chat
+        async function selectChat(chatId, chatName) {
+            currentChatId = chatId;
+            document.getElementById('chatTitle').textContent = chatName;
+            document.getElementById('messageInput').disabled = false;
+            document.getElementById('sendButton').disabled = false;
+
+            document.querySelectorAll('.chat-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+
+            await loadMessages(chatId);
+            await fetch(`${API_URL}/api/messages/mark-read?chat_id=${chatId}`, { method: 'POST' });
+        }
+
+        // Load Messages
+        async function loadMessages(chatId) {
+            try {
+                const response = await fetch(`${API_URL}/api/messages/${chatId}?limit=50`);
+                const data = await response.json();
+
+                const container = document.getElementById('messagesContainer');
+                container.innerHTML = '';
+                messagesMap.clear();
+
+                if (data.messages && data.messages.length > 0) {
+                    data.messages.reverse().forEach(msg => {
+                        addMessageToUI(msg);
+                    });
+                    container.scrollTop = container.scrollHeight;
+                } else {
+                    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">💬</div><p>No messages yet</p></div>';
+                }
+            } catch (error) {
+                console.error('Error loading messages:', error);
+            }
+        }
+
+        // Add Message to UI
+        function addMessageToUI(msg) {
+            const container = document.getElementById('messagesContainer');
+            if (container.querySelector('.empty-state')) {
+                container.innerHTML = '';
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${msg.is_out ? 'outgoing' : 'incoming'}`;
+            messageDiv.id = `msg-${msg.id}`;
+            messageDiv.dataset.messageId = msg.id;
+
+            const time = new Date(msg.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const mediaHTML = msg.has_media ? '<div style="font-size: 12px; opacity: 0.8;">📎 Media</div>' : '';
+
+            messageDiv.innerHTML = `
+                <div class="message-actions">
+                    ${msg.is_out ? '<button class="action-btn" onclick="editMessage(' + msg.id + ')">✏️</button>' : ''}
+                    <button class="action-btn" onclick="deleteMessage(' + msg.id + ')">🗑️</button>
+                    <button class="action-btn" onclick="reactToMessage(' + msg.id + ')">👍</button>
+                </div>
+                <div class="message-text">${msg.text || mediaHTML}</div>
+                <div class="message-time">${time}</div>
+            `;
+            container.appendChild(messageDiv);
+            messagesMap.set(msg.id, msg);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function updateMessageInUI(msg) {
+            const messageDiv = document.getElementById(`msg-${msg.id}`);
+            if (messageDiv) {
+                const textDiv = messageDiv.querySelector('.message-text');
+                if (textDiv) {
+                    textDiv.innerHTML = msg.text || '(Media)';
+                }
+            }
+        }
+
+        function removeMessageFromUI(msgId) {
+            const messageDiv = document.getElementById(`msg-${msgId}`);
+            if (messageDiv) {
+                messageDiv.remove();
+            }
+            messagesMap.delete(msgId);
+        }
+
+        // Send Message
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+
+            if (!message || !currentChatId) return;
+
+            try {
+                const response = await fetch(`${API_URL}/api/messages/send`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: currentChatId, message })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    input.value = '';
+                    await loadMessages(currentChatId);
+                } else {
+                    showNotification('Failed to send message');
+                }
+            } catch (error) {
+                showNotification('Error: ' + error.message);
+            }
+        }
+
+        // File Upload
+        async function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file || !currentChatId) return;
+
+            const formData = new FormData();
+            formData.append('chat_id', currentChatId);
+            formData.append('file', file);
+            formData.append('caption', '');
+
+            try {
+                const response = await fetch(`${API_URL}/api/messages/send-media`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    showNotification('Media sent');
+                    await loadMessages(currentChatId);
+                } else {
+                    showNotification('Failed to send media');
+                }
+            } catch (error) {
+                showNotification('Error: ' + error.message);
+            }
+
+            event.target.value = '';
+        }
+
+        // Message Actions
+        async function editMessage(messageId) {
+            const newText = prompt('Enter new message:');
+            if (!newText || !currentChatId) return;
+
+            try {
+                await fetch(`${API_URL}/api/messages/edit`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: currentChatId, message_id: messageId, text: newText })
+                });
+                await loadMessages(currentChatId);
+            } catch (error) {
+                showNotification('Error: ' + error.message);
+            }
+        }
+
+        async function deleteMessage(messageId) {
+            if (!confirm('Delete this message?')) return;
+
+            try {
+                await fetch(`${API_URL}/api/messages/delete`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: currentChatId, message_ids: [messageId], revoke: false })
+                });
+                removeMessageFromUI(messageId);
+            } catch (error) {
+                showNotification('Error: ' + error.message);
+            }
+        }
+
+        async function reactToMessage(messageId) {
+            const reaction = prompt('Enter reaction (or leave empty to remove):', '👍');
+            if (reaction === null) return;
+
+            try {
+                await fetch(`${API_URL}/api/messages/react`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: currentChatId, message_id: messageId, reaction: reaction || null })
+                });
+            } catch (error) {
+                showNotification('Error: ' + error.message);
+            }
+        }
+
+        // Enter key to send
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Placeholder functions
+        function showSearch() { showNotification('Search feature coming soon'); }
+        function showSettings() { showNotification('Settings feature coming soon'); }
+        function showChatInfo() { showNotification('Chat info feature coming soon'); }
+
+        // Initialize
+        checkStatus();
+        setInterval(checkStatus, 30000);
+    </script>
+</body>
+</html>
