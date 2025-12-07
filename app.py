@@ -3,10 +3,11 @@ Telegram Web Application
 A modern web interface for Telegram using Telethon with full MTProto API capabilities
 """
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request, UploadFile, File, Form
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request, UploadFile, File, Form, Depends, Header
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, StreamingResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import APIKeyHeader
 from contextlib import asynccontextmanager
 import asyncio
 import os
@@ -23,6 +24,8 @@ from typing import List, Optional, Dict, Any
 import json
 from datetime import datetime, timedelta
 import io
+from collections import defaultdict
+import time
 
 # Load environment variables
 load_dotenv()
@@ -65,6 +68,24 @@ app.add_middleware(
 # Global client instance
 client: Optional[TelegramClient] = None
 websocket_connections: List[WebSocket] = []
+
+# Security settings
+API_KEYS = os.getenv("API_KEYS", "").split(",") if os.getenv("API_KEYS") else []
+API_KEY_ENABLED = os.getenv("API_KEY_ENABLED", "false").lower() == "true"
+RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
+RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
+RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", "60"))
+IP_WHITELIST = os.getenv("IP_WHITELIST", "").split(",") if os.getenv("IP_WHITELIST") else []
+IP_WHITELIST_ENABLED = os.getenv("IP_WHITELIST_ENABLED", "false").lower() == "true"
+
+# Rate limiting storage
+rate_limit_store: Dict[str, List[float]] = defaultdict(list)
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+# Custom features storage (in production, use a database)
+templates_store: Dict[str, Dict] = {}
+reminders_store: List[Dict] = []
+tags_store: Dict[str, List[str]] = {}  # message_id -> [tags]
 
 # ============================================================================
 # Pydantic Models
