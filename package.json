@@ -1,0 +1,34 @@
+{
+  "name": "telegram-web-app",
+  "version": "2.0.0",
+  "description": "Modern Telegram Web App with PWA support - Full MTProto API access via Telethon",
+  "main": "app.py",
+  "scripts": {
+    "start": "python start.py",
+    "dev": "python start.py",
+    "start-only": "python app.py",
+    "test": "python test_app.py",
+    "auth": "python scripts/auth_cli.py",
+    "generate-icons": "python generate_icons.py",
+    "install-deps": "pip install -r requirements.txt"
+  },
+  "keywords": [
+    "telegram",
+    "web-app",
+    "pwa",
+    "fastapi",
+    "telethon",
+    "mtproto",
+    "python"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Themis128/telegram-web-app.git"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "python": ">=3.8.0"
+  }
+}

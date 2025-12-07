@@ -7,6 +7,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Requ
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, StreamingResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 import asyncio
 import os
 import tempfile
@@ -26,7 +27,31 @@ import io
 # Load environment variables
 load_dotenv()
 
-app = FastAPI(title="Telegram Web App - Full API", version="2.0.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup and shutdown events"""
+    # Startup
+    try:
+        result = await init_client()
+        print(f"Telegram client: {result}")
+        if result.get("status") == "connected":
+            await setup_event_handlers()
+    except Exception as e:
+        print(f"Error initializing client: {e}")
+
+    yield
+
+    # Shutdown
+    global client
+    if client:
+        await client.disconnect()
+        print("Telegram client disconnected")
+
+app = FastAPI(
+    title="Telegram Web App - Full API",
+    version="2.0.0",
+    lifespan=lifespan
+)
 
 # CORS middleware
 app.add_middleware(
@@ -260,17 +285,6 @@ async def setup_event_handlers():
             await broadcast_to_websockets(action_data)
         except Exception as e:
             print(f"Error in chat_action_handler: {e}")
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize on startup"""
-    try:
-        result = await init_client()
-        print(f"Telegram client: {result}")
-        if result.get("status") == "connected":
-            await setup_event_handlers()
-    except Exception as e:
-        print(f"Error initializing client: {e}")
 
 # ============================================================================
 # Basic Routes
@@ -630,6 +644,63 @@ async def get_messages(chat_id: str, limit: int = 20, offset_id: int = 0):
             if msg.media:
                 message_data["has_media"] = True
                 message_data["media_type"] = type(msg.media).__name__
+
+                # Get media details based on media type
+                media = msg.media
+
+                # Check for photo
+                if isinstance(media, types.MessageMediaPhoto):
+                    message_data["media_category"] = "photo"
+                # Check for document (which can be video, audio, image, or file)
+                elif isinstance(media, types.MessageMediaDocument):
+                    doc = media.document
+                    message_data["mime_type"] = getattr(doc, 'mime_type', None) or ""
+
+                    # Get file name from attributes
+                    file_name = None
+                    if hasattr(doc, 'attributes'):
+                        for attr in doc.attributes:
+                            if isinstance(attr, types.DocumentAttributeFilename):
+                                file_name = attr.file_name
+                                break
+                            elif isinstance(attr, types.DocumentAttributeAudio):
+                                if hasattr(attr, 'title') and attr.title:
+                                    file_name = f"{attr.title}.mp3"
+                                break
+
+                    message_data["file_name"] = file_name
+
+                    # Determine category based on mime type and attributes
+                    if message_data["mime_type"].startswith('video/'):
+                        message_data["media_category"] = "video"
+                    elif message_data["mime_type"].startswith('audio/') or message_data["mime_type"] == 'audio/ogg':
+                        message_data["media_category"] = "audio"
+                    elif message_data["mime_type"].startswith('image/'):
+                        message_data["media_category"] = "image"
+                    else:
+                        message_data["media_category"] = "document"
+
+                    # Check for video note (circular video)
+                    if hasattr(doc, 'attributes'):
+                        for attr in doc.attributes:
+                            if isinstance(attr, types.DocumentAttributeVideo):
+                                if hasattr(attr, 'round_message') and attr.round_message:
+                                    message_data["media_category"] = "video_note"
+                                break
+                # Check for geo location
+                elif isinstance(media, types.MessageMediaGeo):
+                    message_data["media_category"] = "location"
+                # Check for contact
+                elif isinstance(media, types.MessageMediaContact):
+                    message_data["media_category"] = "contact"
+                # Check for poll
+                elif isinstance(media, types.MessageMediaPoll):
+                    message_data["media_category"] = "poll"
+                else:
+                    message_data["media_category"] = "unknown"
+
+                # Store message ID for media download
+                message_data["media_message_id"] = msg.id
             else:
                 message_data["has_media"] = False
 
@@ -870,6 +941,55 @@ async def download_media(chat_id: str, message_id: int):
             io.BytesIO(file_bytes),
             media_type="application/octet-stream",
             headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/files/preview/{chat_id}/{message_id}")
+async def preview_media(chat_id: str, message_id: int):
+    """Preview media from a message (for display in UI)"""
+    check_client_connected()
+
+    try:
+        entity = await get_entity_safe(chat_id)
+        messages = await client.get_messages(entity, ids=message_id)
+
+        if not messages or not messages[0].media:
+            raise HTTPException(status_code=404, detail="Message not found or has no media")
+
+        message = messages[0]
+
+        # Download to memory
+        file_bytes = await client.download_media(message, file=bytes)
+
+        # Determine media type and filename
+        media_type = "application/octet-stream"
+        filename = f"file_{message_id}"
+
+        if isinstance(message.media, types.MessageMediaPhoto):
+            media_type = "image/jpeg"
+            filename = f"photo_{message_id}.jpg"
+        elif isinstance(message.media, types.MessageMediaDocument):
+            doc = message.media.document
+            if hasattr(doc, 'mime_type') and doc.mime_type:
+                media_type = doc.mime_type
+            if hasattr(doc, 'attributes') and doc.attributes:
+                for attr in doc.attributes:
+                    if isinstance(attr, types.DocumentAttributeFilename):
+                        filename = attr.file_name
+                        break
+                    elif isinstance(attr, types.DocumentAttributeAudio):
+                        if hasattr(attr, 'title') and attr.title:
+                            filename = f"{attr.title}.mp3"
+                        break
+
+        return Response(
+            content=file_bytes,
+            media_type=media_type,
+            headers={
+                "Content-Disposition": f'inline; filename="{filename}"',
+                "Cache-Control": "public, max-age=3600"
+            }
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

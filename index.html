@@ -355,6 +355,315 @@
             margin-top: 4px;
         }
 
+        .message-media {
+            margin: 8px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            max-width: 100%;
+        }
+
+        .message-media img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .message-media img:hover {
+            transform: scale(1.02);
+        }
+
+        .message-media video {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .message-media audio {
+            width: 100%;
+            margin: 8px 0;
+        }
+
+        .message-media-document {
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .message-media-document:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .message-media-icon {
+            font-size: 32px;
+        }
+
+        .message-media-info {
+            flex: 1;
+        }
+
+        .message-media-filename {
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--tg-text-primary);
+        }
+
+        .message-media-size {
+            font-size: 12px;
+            color: var(--tg-text-secondary);
+            margin-top: 2px;
+        }
+
+        .message-media-location {
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .message-media-contact {
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--tg-text-primary);
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--tg-text-secondary);
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+
+        .modal-close:hover {
+            background: var(--tg-light-secondary);
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--tg-border);
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 12px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .modal-input:focus {
+            border-color: var(--tg-blue);
+        }
+
+        .modal-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--tg-border);
+            border-radius: 8px;
+            font-size: 14px;
+            min-height: 100px;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+
+        .modal-textarea:focus {
+            border-color: var(--tg-blue);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .modal-btn-primary {
+            background: var(--tg-blue);
+            color: white;
+        }
+
+        .modal-btn-primary:hover {
+            background: var(--tg-blue-hover);
+        }
+
+        .modal-btn-secondary {
+            background: var(--tg-light-secondary);
+            color: var(--tg-text-primary);
+        }
+
+        .modal-btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .search-results {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 12px;
+        }
+
+        .search-result-item {
+            padding: 12px;
+            border-bottom: 1px solid var(--tg-border);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .search-result-item:hover {
+            background: var(--tg-light-secondary);
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-section {
+            margin-bottom: 20px;
+        }
+
+        .info-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--tg-text-primary);
+        }
+
+        .info-item {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--tg-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-size: 14px;
+            color: var(--tg-text-secondary);
+        }
+
+        .info-value {
+            font-size: 14px;
+            color: var(--tg-text-primary);
+            font-weight: 500;
+        }
+
+        .member-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .member-item {
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--tg-border);
+        }
+
+        .member-item:last-child {
+            border-bottom: none;
+        }
+
+        .member-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--tg-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .member-name {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
         .message-actions {
             position: absolute;
             top: -35px;
@@ -587,14 +896,125 @@
         <button class="close" onclick="dismissPWA()">✕</button>
     </div>
 
+    <!-- Search Modal -->
+    <div class="modal" id="searchModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔍 Search Messages</h2>
+                <button class="modal-close" onclick="closeModal('searchModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" class="modal-input" id="searchQueryInput" placeholder="Enter search query..." onkeypress="if(event.key==='Enter') performSearch()">
+                <div class="search-results" id="searchResults"></div>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-secondary" onclick="closeModal('searchModal')">Cancel</button>
+                <button class="modal-btn modal-btn-primary" onclick="performSearch()">Search</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚙️ Settings</h2>
+                <button class="modal-close" onclick="closeModal('settingsModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-section">
+                    <h3>Account Information</h3>
+                    <div id="accountInfo">Loading...</div>
+                </div>
+                <div class="info-section">
+                    <h3>Update Profile</h3>
+                    <input type="text" class="modal-input" id="profileFirstName" placeholder="First Name">
+                    <input type="text" class="modal-input" id="profileLastName" placeholder="Last Name">
+                    <textarea class="modal-textarea" id="profileAbout" placeholder="Bio"></textarea>
+                    <button class="modal-btn modal-btn-primary" onclick="updateProfile()" style="width: 100%; margin-top: 10px;">Update Profile</button>
+                </div>
+                <div class="info-section">
+                    <h3>Profile Photo</h3>
+                    <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;" onchange="uploadProfilePhoto()">
+                    <button class="modal-btn modal-btn-secondary" onclick="document.getElementById('profilePhotoInput').click()" style="width: 100%;">Change Photo</button>
+                    <button class="modal-btn modal-btn-secondary" onclick="deleteProfilePhoto()" style="width: 100%; margin-top: 10px;">Delete Photo</button>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-secondary" onclick="closeModal('settingsModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Info Modal -->
+    <div class="modal" id="chatInfoModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="chatInfoTitle">Chat Info</h2>
+                <button class="modal-close" onclick="closeModal('chatInfoModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-section" id="chatInfoContent">
+                    <div class="loading">Loading chat information...</div>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-secondary" onclick="closeModal('chatInfoModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Group Modal -->
+    <div class="modal" id="createGroupModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>➕ Create Group</h2>
+                <button class="modal-close" onclick="closeModal('createGroupModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" class="modal-input" id="groupNameInput" placeholder="Group name">
+                <input type="text" class="modal-input" id="groupUsersInput" placeholder="Add users (usernames or IDs, comma-separated)">
+                <small style="color: var(--tg-text-secondary); display: block; margin-top: -8px; margin-bottom: 12px;">Example: @user1, @user2, 123456789</small>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-secondary" onclick="closeModal('createGroupModal')">Cancel</button>
+                <button class="modal-btn modal-btn-primary" onclick="createGroup()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Channel Modal -->
+    <div class="modal" id="createChannelModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📢 Create Channel</h2>
+                <button class="modal-close" onclick="closeModal('createChannelModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" class="modal-input" id="channelNameInput" placeholder="Channel name">
+                <textarea class="modal-textarea" id="channelAboutInput" placeholder="Channel description (optional)"></textarea>
+                <label style="display: flex; align-items: center; gap: 8px; margin-top: 12px; cursor: pointer;">
+                    <input type="checkbox" id="channelMegagroupInput">
+                    <span>Create as Supergroup (instead of Channel)</span>
+                </label>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-secondary" onclick="closeModal('createChannelModal')">Cancel</button>
+                <button class="modal-btn modal-btn-primary" onclick="createChannel()">Create</button>
+            </div>
+        </div>
+    </div>
+
     <div class="app-container">
         <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
                 <h1>📱 Telegram</h1>
                 <div class="header-actions">
+                    <button class="btn-icon" onclick="showCreateGroupModal()" title="Create Group">➕</button>
+                    <button class="btn-icon" onclick="showCreateChannelModal()" title="Create Channel">📢</button>
                     <button class="btn-icon" onclick="loadChats()" title="Refresh">🔄</button>
-                    <button class="btn-icon" onclick="showSearch()" title="Search">🔍</button>
+                    <button class="btn-icon" onclick="toggleSearchBox()" title="Search Chats">🔍</button>
                     <button class="btn-icon" onclick="showSettings()" title="Settings">⚙️</button>
                 </div>
             </div>
@@ -610,7 +1030,7 @@
             </div>
 
             <div class="search-box hidden" id="searchBox">
-                <input type="text" class="search-input" placeholder="Search chats..." id="searchInput">
+                <input type="text" class="search-input" placeholder="Search chats..." id="searchInput" onkeyup="filterChats(this.value)" onfocus="this.select()">
             </div>
 
             <div class="chat-list" id="chatList">
@@ -907,7 +1327,89 @@
             messageDiv.dataset.messageId = msg.id;
 
             const time = new Date(msg.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const mediaHTML = msg.has_media ? '<div style="font-size: 12px; opacity: 0.8;">📎 Media</div>' : '';
+
+            // Build media HTML
+            let mediaHTML = '';
+            if (msg.has_media && msg.media_category) {
+                const mediaUrl = `${API_URL}/api/files/preview/${currentChatId}/${msg.id}`;
+                const downloadUrl = `${API_URL}/api/files/download/${currentChatId}/${msg.id}`;
+
+                switch(msg.media_category) {
+                    case 'photo':
+                    case 'image':
+                        mediaHTML = `
+                            <div class="message-media">
+                                <img src="${mediaUrl}" alt="Photo" onclick="window.open('${mediaUrl}', '_blank')" loading="lazy">
+                            </div>
+                        `;
+                        break;
+                    case 'video':
+                    case 'video_note':
+                        const videoStyle = msg.media_category === 'video_note' ? 'border-radius: 50%; width: 200px; height: 200px; object-fit: cover;' : '';
+                        mediaHTML = `
+                            <div class="message-media">
+                                <video controls preload="metadata" onclick="this.paused ? this.play() : this.pause()" style="${videoStyle}">
+                                    <source src="${mediaUrl}" type="${msg.mime_type || 'video/mp4'}">
+                                    Your browser does not support video playback.
+                                </video>
+                            </div>
+                        `;
+                        break;
+                    case 'audio':
+                        mediaHTML = `
+                            <div class="message-media">
+                                <audio controls preload="metadata">
+                                    <source src="${mediaUrl}" type="${msg.mime_type || 'audio/mpeg'}">
+                                    Your browser does not support audio playback.
+                                </audio>
+                            </div>
+                        `;
+                        break;
+                    case 'document':
+                        const fileName = msg.file_name || 'Document';
+                        const fileIcon = getFileIcon(fileName);
+                        mediaHTML = `
+                            <div class="message-media-document" onclick="window.open('${downloadUrl}', '_blank')">
+                                <div class="message-media-icon">${fileIcon}</div>
+                                <div class="message-media-info">
+                                    <div class="message-media-filename">${fileName}</div>
+                                    <div class="message-media-size">Click to download</div>
+                                </div>
+                            </div>
+                        `;
+                        break;
+                    case 'location':
+                        mediaHTML = `
+                            <div class="message-media-location">
+                                <div class="message-media-icon">📍</div>
+                                <div class="message-media-info">
+                                    <div class="message-media-filename">Location</div>
+                                </div>
+                            </div>
+                        `;
+                        break;
+                    case 'contact':
+                        mediaHTML = `
+                            <div class="message-media-contact">
+                                <div class="message-media-icon">👤</div>
+                                <div class="message-media-info">
+                                    <div class="message-media-filename">Contact</div>
+                                </div>
+                            </div>
+                        `;
+                        break;
+                    default:
+                        mediaHTML = `
+                            <div class="message-media-document" onclick="window.open('${downloadUrl}', '_blank')">
+                                <div class="message-media-icon">📎</div>
+                                <div class="message-media-info">
+                                    <div class="message-media-filename">Media file</div>
+                                    <div class="message-media-size">Click to download</div>
+                                </div>
+                            </div>
+                        `;
+                }
+            }
 
             messageDiv.innerHTML = `
                 <div class="message-actions">
@@ -915,7 +1417,8 @@
                     <button class="action-btn" onclick="deleteMessage(' + msg.id + ')">🗑️</button>
                     <button class="action-btn" onclick="reactToMessage(' + msg.id + ')">👍</button>
                 </div>
-                <div class="message-text">${msg.text || mediaHTML}</div>
+                ${mediaHTML}
+                ${msg.text ? `<div class="message-text">${msg.text}</div>` : ''}
                 <div class="message-time">${time}</div>
             `;
             container.appendChild(messageDiv);
@@ -1053,10 +1556,432 @@
             }
         });
 
-        // Placeholder functions
-        function showSearch() { showNotification('Search feature coming soon'); }
-        function showSettings() { showNotification('Settings feature coming soon'); }
-        function showChatInfo() { showNotification('Chat info feature coming soon'); }
+        // Get file icon based on extension
+        function getFileIcon(fileName) {
+            const ext = fileName.split('.').pop().toLowerCase();
+            const icons = {
+                'pdf': '📄',
+                'doc': '📝', 'docx': '📝',
+                'xls': '📊', 'xlsx': '📊',
+                'ppt': '📊', 'pptx': '📊',
+                'zip': '📦', 'rar': '📦', '7z': '📦',
+                'mp3': '🎵', 'wav': '🎵', 'ogg': '🎵',
+                'mp4': '🎬', 'avi': '🎬', 'mov': '🎬',
+                'jpg': '🖼️', 'jpeg': '🖼️', 'png': '🖼️', 'gif': '🖼️',
+                'txt': '📄',
+                'exe': '⚙️',
+                'apk': '📱'
+            };
+            return icons[ext] || '📎';
+        }
+
+        // Modal Functions
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('show');
+            }
+        }
+
+        // Search Functionality
+        function showSearch() {
+            openModal('searchModal');
+            document.getElementById('searchQueryInput').focus();
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('searchQueryInput').value.trim();
+            if (!query) {
+                showNotification('Please enter a search query');
+                return;
+            }
+
+            const resultsDiv = document.getElementById('searchResults');
+            resultsDiv.innerHTML = '<div class="loading">Searching...</div>';
+
+            try {
+                const response = await fetch(`${API_URL}/api/search`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: currentChatId,
+                        query: query,
+                        limit: 20
+                    })
+                });
+
+                const data = await response.json();
+                resultsDiv.innerHTML = '';
+
+                if (data.messages && data.messages.length > 0) {
+                    data.messages.forEach(msg => {
+                        const item = document.createElement('div');
+                        item.className = 'search-result-item';
+                        item.onclick = () => {
+                            if (msg.chat_id) {
+                                selectChat(msg.chat_id, 'Chat');
+                            }
+                            closeModal('searchModal');
+                        };
+                        item.innerHTML = `
+                            <div style="font-weight: 500; margin-bottom: 4px;">${msg.text || '(Media)'}</div>
+                            <div style="font-size: 12px; color: var(--tg-text-secondary);">${new Date(msg.date).toLocaleString()}</div>
+                        `;
+                        resultsDiv.appendChild(item);
+                    });
+                } else {
+                    resultsDiv.innerHTML = '<div class="loading">No results found</div>';
+                }
+            } catch (error) {
+                showNotification('Search error: ' + error.message);
+                resultsDiv.innerHTML = '<div class="loading">Error searching</div>';
+            }
+        }
+
+        // Settings Functionality
+        async function showSettings() {
+            openModal('settingsModal');
+            await loadAccountInfo();
+        }
+
+        async function loadAccountInfo() {
+            try {
+                const response = await fetch(`${API_URL}/api/account`);
+                const data = await response.json();
+
+                const accountInfo = document.getElementById('accountInfo');
+                accountInfo.innerHTML = `
+                    <div class="info-item">
+                        <span class="info-label">Name</span>
+                        <span class="info-value">${data.first_name} ${data.last_name || ''}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Username</span>
+                        <span class="info-value">@${data.username || 'Not set'}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Phone</span>
+                        <span class="info-value">${data.phone || 'Not available'}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">User ID</span>
+                        <span class="info-value">${data.id}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Premium</span>
+                        <span class="info-value">${data.is_premium ? 'Yes' : 'No'}</span>
+                    </div>
+                `;
+
+                document.getElementById('profileFirstName').value = data.first_name || '';
+                document.getElementById('profileLastName').value = data.last_name || '';
+                document.getElementById('profileAbout').value = '';
+            } catch (error) {
+                showNotification('Error loading account info');
+            }
+        }
+
+        async function updateProfile() {
+            const firstName = document.getElementById('profileFirstName').value.trim();
+            const lastName = document.getElementById('profileLastName').value.trim();
+            const about = document.getElementById('profileAbout').value.trim();
+
+            if (!firstName) {
+                showNotification('First name is required');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/account/profile`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        first_name: firstName,
+                        last_name: lastName || null,
+                        about: about || null
+                    })
+                });
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    showNotification('Profile updated successfully');
+                    await loadAccountInfo();
+                }
+            } catch (error) {
+                showNotification('Error updating profile: ' + error.message);
+            }
+        }
+
+        async function uploadProfilePhoto() {
+            const fileInput = document.getElementById('profilePhotoInput');
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_URL}/api/account/photo`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    showNotification('Profile photo updated');
+                }
+            } catch (error) {
+                showNotification('Error uploading photo: ' + error.message);
+            }
+        }
+
+        async function deleteProfilePhoto() {
+            if (!confirm('Delete profile photo?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/api/account/photo`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    showNotification('Profile photo deleted');
+                }
+            } catch (error) {
+                showNotification('Error deleting photo: ' + error.message);
+            }
+        }
+
+        // Chat Info Functionality
+        async function showChatInfo() {
+            if (!currentChatId) {
+                showNotification('Please select a chat first');
+                return;
+            }
+
+            openModal('chatInfoModal');
+            await loadChatInfo();
+        }
+
+        async function loadChatInfo() {
+            const content = document.getElementById('chatInfoContent');
+            content.innerHTML = '<div class="loading">Loading...</div>';
+
+            try {
+                // Get chat info
+                const chatResponse = await fetch(`${API_URL}/api/chats/${currentChatId}`);
+                const chatData = await chatResponse.json();
+
+                // Get members
+                let membersHTML = '';
+                try {
+                    const membersResponse = await fetch(`${API_URL}/api/chats/${currentChatId}/members?limit=50`);
+                    const membersData = await membersResponse.json();
+                    
+                    if (membersData.members && membersData.members.length > 0) {
+                        membersHTML = '<div class="member-list">';
+                        membersData.members.forEach(member => {
+                            const avatar = member.first_name.charAt(0).toUpperCase();
+                            membersHTML += `
+                                <div class="member-item">
+                                    <div class="member-avatar">${avatar}</div>
+                                    <div class="member-name">${member.first_name} ${member.last_name || ''}</div>
+                                </div>
+                            `;
+                        });
+                        membersHTML += '</div>';
+                    }
+                } catch (e) {
+                    membersHTML = '<div class="loading">Unable to load members</div>';
+                }
+
+                // Get invite link
+                let inviteLink = '';
+                try {
+                    const linkResponse = await fetch(`${API_URL}/api/chats/${currentChatId}/invite-link`);
+                    const linkData = await linkResponse.json();
+                    inviteLink = linkData.invite_link || '';
+                } catch (e) {
+                    inviteLink = 'Unable to get invite link';
+                }
+
+                document.getElementById('chatInfoTitle').textContent = chatData.title || 'Chat Info';
+                
+                content.innerHTML = `
+                    <div class="info-section">
+                        <h3>Chat Information</h3>
+                        <div class="info-item">
+                            <span class="info-label">Name</span>
+                            <span class="info-value">${chatData.title || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Type</span>
+                            <span class="info-value">${chatData.is_group ? 'Group' : chatData.is_channel ? 'Channel' : 'Private Chat'}</span>
+                        </div>
+                        ${chatData.participants_count ? `
+                        <div class="info-item">
+                            <span class="info-label">Members</span>
+                            <span class="info-value">${chatData.participants_count}</span>
+                        </div>
+                        ` : ''}
+                        ${chatData.username ? `
+                        <div class="info-item">
+                            <span class="info-label">Username</span>
+                            <span class="info-value">@${chatData.username}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ${membersHTML ? `
+                    <div class="info-section">
+                        <h3>Members</h3>
+                        ${membersHTML}
+                    </div>
+                    ` : ''}
+                    ${inviteLink ? `
+                    <div class="info-section">
+                        <h3>Invite Link</h3>
+                        <div class="info-item">
+                            <span class="info-label">Link</span>
+                            <span class="info-value" style="word-break: break-all; font-size: 12px;">${inviteLink}</span>
+                        </div>
+                        <button class="modal-btn modal-btn-primary" onclick="copyToClipboard('${inviteLink}')" style="width: 100%; margin-top: 10px;">Copy Link</button>
+                    </div>
+                    ` : ''}
+                `;
+            } catch (error) {
+                content.innerHTML = '<div class="loading">Error loading chat info</div>';
+                showNotification('Error: ' + error.message);
+            }
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('Copied to clipboard!');
+            }).catch(() => {
+                showNotification('Failed to copy');
+            });
+        }
+
+        // Search Box Toggle
+        function toggleSearchBox() {
+            const searchBox = document.getElementById('searchBox');
+            searchBox.classList.toggle('hidden');
+            if (!searchBox.classList.contains('hidden')) {
+                document.getElementById('searchInput').focus();
+            }
+        }
+
+        // Filter Chats
+        function filterChats(query) {
+            const chatItems = document.querySelectorAll('.chat-item');
+            const lowerQuery = query.toLowerCase();
+            
+            chatItems.forEach(item => {
+                const name = item.querySelector('.chat-name').textContent.toLowerCase();
+                const preview = item.querySelector('.chat-preview').textContent.toLowerCase();
+                
+                if (name.includes(lowerQuery) || preview.includes(lowerQuery)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // Create Group Functionality
+        function showCreateGroupModal() {
+            openModal('createGroupModal');
+            document.getElementById('groupNameInput').value = '';
+            document.getElementById('groupUsersInput').value = '';
+        }
+
+        async function createGroup() {
+            const name = document.getElementById('groupNameInput').value.trim();
+            const usersInput = document.getElementById('groupUsersInput').value.trim();
+
+            if (!name) {
+                showNotification('Group name is required');
+                return;
+            }
+
+            const users = usersInput ? usersInput.split(',').map(u => u.trim()).filter(u => u) : [];
+
+            try {
+                const response = await fetch(`${API_URL}/api/chats/create-group`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: name,
+                        users: users
+                    })
+                });
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    showNotification('Group created successfully!');
+                    closeModal('createGroupModal');
+                    await loadChats();
+                    // Select the new group
+                    await selectChat(data.group_id, data.group_name);
+                } else {
+                    showNotification('Failed to create group');
+                }
+            } catch (error) {
+                showNotification('Error: ' + error.message);
+            }
+        }
+
+        // Create Channel Functionality
+        function showCreateChannelModal() {
+            openModal('createChannelModal');
+            document.getElementById('channelNameInput').value = '';
+            document.getElementById('channelAboutInput').value = '';
+            document.getElementById('channelMegagroupInput').checked = false;
+        }
+
+        async function createChannel() {
+            const name = document.getElementById('channelNameInput').value.trim();
+            const about = document.getElementById('channelAboutInput').value.trim();
+            const megagroup = document.getElementById('channelMegagroupInput').checked;
+
+            if (!name) {
+                showNotification('Channel name is required');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/chats/create-channel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: name,
+                        about: about || null,
+                        megagroup: megagroup
+                    })
+                });
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    showNotification(`${megagroup ? 'Supergroup' : 'Channel'} created successfully!`);
+                    closeModal('createChannelModal');
+                    await loadChats();
+                    // Select the new channel
+                    await selectChat(data.channel_id, data.channel_name);
+                } else {
+                    showNotification('Failed to create channel');
+                }
+            } catch (error) {
+                showNotification('Error: ' + error.message);
+            }
+        }
 
         // Initialize
         checkStatus();

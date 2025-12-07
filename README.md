@@ -71,7 +71,7 @@ pip install -r requirements.txt
    ```bash
    # Windows
    copy env.example .env
-   
+
    # Linux/Mac
    cp env.example .env
    ```
@@ -102,6 +102,12 @@ python generate_icons.py
 
 ### 6. Start the Server
 
+**Option 1: Using npm (recommended)**
+```bash
+npm start
+```
+
+**Option 2: Using Python directly**
 ```bash
 python app.py
 ```
@@ -145,6 +151,7 @@ telegram-web-app/
 ├── index.html             # Frontend UI
 ├── manifest.json          # PWA manifest
 ├── sw.js                  # Service worker
+├── package.json           # npm scripts for convenience
 ├── requirements.txt       # Python dependencies
 ├── .env                   # Environment variables (create from env.example)
 ├── generate_icons.py      # Icon generator script
@@ -154,6 +161,17 @@ telegram-web-app/
 ├── docs/                  # Documentation
 └── README.md             # This file
 ```
+
+## 🚀 Available Scripts
+
+Using `npm` or `npm run`:
+
+- `npm start` - Start the development server
+- `npm run dev` - Alias for start
+- `npm test` - Run API tests
+- `npm run auth` - Run authentication CLI
+- `npm run generate-icons` - Generate PWA icons
+- `npm run install-deps` - Install Python dependencies
 
 ## 🔧 Configuration
 
