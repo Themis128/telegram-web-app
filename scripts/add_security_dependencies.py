@@ -15,11 +15,11 @@ pattern = r'@app\.(get|post|put|delete)\(["\'](/api/[^"\']+)["\']'
 def add_dependency(match):
     method = match.group(1)
     path = match.group(2)
-    
+
     # Skip if already has dependencies
     if 'dependencies=' in content[content.find(match.group(0)):content.find(match.group(0))+200]:
         return match.group(0)
-    
+
     # Add dependencies parameter
     return f'@app.{method}("{path}", dependencies=[Depends(security_dependencies)])'
 
@@ -31,4 +31,3 @@ with open('app.py', 'w', encoding='utf-8') as f:
     f.write(new_content)
 
 print("Security dependencies added to all API endpoints")
-

@@ -80,13 +80,13 @@ def should_forward(message: Dict) -> bool:
         sender_id = message.get("sender_id")
         if sender_id and str(sender_id) not in FILTER_SENDERS:
             return False
-    
+
     # Check keyword filter
     if FILTER_KEYWORDS:
         message_text = message.get("text", "").lower()
         if not any(keyword.lower() in message_text for keyword in FILTER_KEYWORDS):
             return False
-    
+
     return True
 
 
@@ -95,27 +95,27 @@ def process_forwarding_rules():
     for source_chat_id, target_chat_ids in FORWARDING_RULES.items():
         if not target_chat_ids:
             continue
-        
+
         messages = get_messages(source_chat_id, limit=10)
-        
+
         for msg in messages:
             msg_id = msg.get("id")
             msg_key = f"{source_chat_id}_{msg_id}"
-            
+
             # Skip if already processed
             if msg_key in processed_messages:
                 continue
-            
+
             # Skip outgoing messages
             if msg.get("is_out"):
                 processed_messages.add(msg_key)
                 continue
-            
+
             # Check if should forward
             if not should_forward(msg):
                 processed_messages.add(msg_key)
                 continue
-            
+
             # Forward to all target chats
             for target_chat_id in target_chat_ids:
                 print(f"Forwarding message {msg_id} from {source_chat_id} to {target_chat_id}")
@@ -123,7 +123,7 @@ def process_forwarding_rules():
                     print(f"✓ Forwarded successfully")
                 else:
                     print(f"✗ Failed to forward")
-            
+
             processed_messages.add(msg_key)
 
 
@@ -135,22 +135,22 @@ def main():
     print(f"Filter Keywords: {FILTER_KEYWORDS or 'None (forward all)'}")
     print(f"Filter Senders: {FILTER_SENDERS or 'None (forward from all)'}")
     print("-" * 50)
-    
+
     if not FORWARDING_RULES:
         print("⚠️  No forwarding rules configured!")
         print("Edit FORWARDING_RULES in this script to add rules.")
         return
-    
+
     while True:
         try:
             process_forwarding_rules()
-            
+
             # Clean up old processed messages
             if len(processed_messages) > 1000:
                 processed_messages.clear()
-            
+
             time.sleep(5)  # Check every 5 seconds
-            
+
         except KeyboardInterrupt:
             print("\n\n👋 Message Forwarder Stopped")
             break
@@ -161,4 +161,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

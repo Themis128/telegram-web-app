@@ -733,7 +733,7 @@ async def get_messages(chat_id: str, limit: int = 20, offset_id: int = 0):
                         message_data["webpage_title"] = getattr(webpage, 'title', None) or ""
                         message_data["webpage_description"] = getattr(webpage, 'description', None) or ""
                         message_data["webpage_site_name"] = getattr(webpage, 'site_name', None) or ""
-                        
+
                         # Get thumbnail if available
                         if hasattr(webpage, 'photo') and webpage.photo:
                             message_data["webpage_thumb_url"] = f"/api/files/preview/{chat_id}/{msg.id}?thumb=true"
@@ -746,7 +746,7 @@ async def get_messages(chat_id: str, limit: int = 20, offset_id: int = 0):
                 message_data["media_message_id"] = msg.id
             else:
                 message_data["has_media"] = False
-            
+
             # Detect URLs in message text for link previews (even without webpage media)
             import re
             url_pattern = r'https?://[^\s<>"{}|\\^`\[\]]+[^\s<>"{}|\\^`\[\].,;:!?]'
@@ -1148,7 +1148,7 @@ async def preview_media(chat_id: str, message_id: int):
 
         if not message.media:
             raise HTTPException(status_code=404, detail="Message has no media")
-        
+
         # Handle webpage thumbnail
         if isinstance(message.media, types.MessageMediaWebPage):
             webpage = message.media.webpage

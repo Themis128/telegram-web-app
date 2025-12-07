@@ -85,43 +85,43 @@ def should_respond(message_text: str) -> tuple[bool, str]:
     """Check if we should respond and what to respond with"""
     if not message_text:
         return False, ""
-    
+
     message_lower = message_text.lower().strip()
-    
+
     # Check for exact keyword matches
     for keyword, response in RESPONSE_RULES.items():
         if message_lower == keyword or message_lower.startswith(f"{keyword} "):
             return True, response
-    
+
     # Check for keyword in message
     for keyword, response in RESPONSE_RULES.items():
         if keyword in message_lower:
             return True, response
-    
+
     return False, ""
 
 
 def process_chat(chat_id: str):
     """Process messages in a chat and respond if needed"""
     messages = get_messages(chat_id, limit=5)
-    
+
     for msg in messages:
         msg_id = msg.get("id")
         msg_key = f"{chat_id}_{msg_id}"
-        
+
         # Skip if already processed
         if msg_key in processed_messages:
             continue
-        
+
         # Skip outgoing messages (from us)
         if msg.get("is_out"):
             processed_messages.add(msg_key)
             continue
-        
+
         # Check if we should respond
         message_text = msg.get("text", "")
         should, response = should_respond(message_text)
-        
+
         if should:
             print(f"Responding to message in chat {chat_id}: {message_text[:50]}...")
             if send_message(chat_id, response):
@@ -138,22 +138,22 @@ def main():
     print(f"Response Rules: {len(RESPONSE_RULES)} keywords")
     print(f"Check Interval: {CHECK_INTERVAL} seconds")
     print("-" * 50)
-    
+
     while True:
         try:
             chats = get_chats()
             print(f"Checking {len(chats)} chats...")
-            
+
             for chat in chats:
                 chat_id = str(chat.get("id"))
                 process_chat(chat_id)
-            
+
             # Clean up old processed messages (keep last 1000)
             if len(processed_messages) > 1000:
                 processed_messages.clear()
-            
+
             time.sleep(CHECK_INTERVAL)
-            
+
         except KeyboardInterrupt:
             print("\n\n👋 Auto-Responder Stopped")
             break
@@ -164,4 +164,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
