@@ -1785,7 +1785,7 @@
                 try {
                     const membersResponse = await fetch(`${API_URL}/api/chats/${currentChatId}/members?limit=50`);
                     const membersData = await membersResponse.json();
-                    
+
                     if (membersData.members && membersData.members.length > 0) {
                         membersHTML = '<div class="member-list">';
                         membersData.members.forEach(member => {
@@ -1814,7 +1814,7 @@
                 }
 
                 document.getElementById('chatInfoTitle').textContent = chatData.title || 'Chat Info';
-                
+
                 content.innerHTML = `
                     <div class="info-section">
                         <h3>Chat Information</h3>
@@ -1883,11 +1883,11 @@
         function filterChats(query) {
             const chatItems = document.querySelectorAll('.chat-item');
             const lowerQuery = query.toLowerCase();
-            
+
             chatItems.forEach(item => {
                 const name = item.querySelector('.chat-name').textContent.toLowerCase();
                 const preview = item.querySelector('.chat-preview').textContent.toLowerCase();
-                
+
                 if (name.includes(lowerQuery) || preview.includes(lowerQuery)) {
                     item.style.display = '';
                 } else {

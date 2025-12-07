@@ -610,11 +610,11 @@ async def get_invite_link(chat_id: str):
 
     try:
         entity = await get_entity_safe(chat_id)
-        
+
         # Check if it's a group or channel
         if not isinstance(entity, (types.Channel, types.Chat)):
             raise HTTPException(status_code=400, detail="Only groups and channels have invite links")
-        
+
         link = await client.export_chat_invite_link(entity)
         return {"invite_link": link}
     except HTTPException:
@@ -1043,7 +1043,7 @@ async def get_contacts():
         # Get contacts using GetContactsRequest
         from telethon.tl.functions.contacts import GetContactsRequest
         result = await client(GetContactsRequest(hash=0))
-        
+
         contact_list = []
         for contact in result.users:
             if not contact.bot:  # Exclude bots
@@ -1120,6 +1120,39 @@ async def delete_contact(user_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/blocked-users", name="get_blocked_users")
+async def get_blocked_users():
+    """Get blocked users list - MUST be defined before /api/users/{user_id}"""
+    check_client_connected()
+
+    try:
+        # Use GetBlockedRequest - result is Blocked or BlockedSlice
+        from telethon.tl.functions.contacts import GetBlockedRequest
+        result = await client(GetBlockedRequest(offset=0, limit=100))
+
+        blocked_list = []
+        # Result has 'users' attribute which is a list of User objects
+        if hasattr(result, 'users') and result.users:
+            for user in result.users:
+                blocked_list.append({
+                    "id": user.id,
+                    "first_name": getattr(user, 'first_name', ''),
+                    "last_name": getattr(user, 'last_name', '') or "",
+                    "username": getattr(user, 'username', '') or ""
+                })
+
+        return {"blocked": blocked_list}
+    except Exception as e:
+        # Log error but return empty list (user might not have blocked anyone)
+        import traceback
+        error_msg = str(e)
+        print(f"Error getting blocked users: {error_msg}")
+        print(traceback.format_exc())
+        # If it's a routing error, return empty list
+        if "Entity not found" in error_msg or "invalid literal" in error_msg:
+            return {"blocked": []}
+        raise HTTPException(status_code=500, detail=error_msg)
+
 @app.get("/api/users/{user_id}")
 async def get_user_info(user_id: str):
     """Get user information"""
@@ -1185,30 +1218,6 @@ async def unblock_user(user_id: str):
         return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/users/blocked")
-async def get_blocked_users():
-    """Get blocked users list"""
-    check_client_connected()
-
-    try:
-        # Use GetBlockedRequest
-        from telethon.tl.functions.contacts import GetBlockedRequest
-        result = await client(GetBlockedRequest(offset=0, limit=100))
-        
-        blocked_list = []
-        for user in result.users:
-            blocked_list.append({
-                "id": user.id,
-                "first_name": user.first_name,
-                "last_name": user.last_name or "",
-                "username": user.username or ""
-            })
-
-        return {"blocked": blocked_list}
-    except Exception as e:
-        # Return empty list if no blocked users or error
-        return {"blocked": []}
 
 # ============================================================================
 # Account Management
