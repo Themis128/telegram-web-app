@@ -1514,6 +1514,148 @@ async def delete_profile_photo():
         raise HTTPException(status_code=500, detail=str(e))
 
 # ============================================================================
+# Security Functions
+# ============================================================================
+
+def verify_api_key(api_key: Optional[str] = Header(None, alias="X-API-Key")):
+    """Verify API key if enabled"""
+    if not API_KEY_ENABLED:
+        return True
+    if not api_key:
+        raise HTTPException(status_code=401, detail="API key required")
+    if api_key not in API_KEYS:
+        raise HTTPException(status_code=403, detail="Invalid API key")
+    return True
+
+def check_rate_limit(request: Request):
+    """Check rate limit for IP address"""
+    if not RATE_LIMIT_ENABLED:
+        return True
+    client_ip = request.client.host if request.client else "unknown"
+    now = time.time()
+    rate_limit_store[client_ip] = [t for t in rate_limit_store[client_ip] if now - t < RATE_LIMIT_WINDOW]
+    if len(rate_limit_store[client_ip]) >= RATE_LIMIT_REQUESTS:
+        raise HTTPException(status_code=429, detail=f"Rate limit exceeded. Maximum {RATE_LIMIT_REQUESTS} requests per {RATE_LIMIT_WINDOW} seconds.")
+    rate_limit_store[client_ip].append(now)
+    return True
+
+def check_ip_whitelist(request: Request):
+    """Check if IP is whitelisted"""
+    if not IP_WHITELIST_ENABLED:
+        return True
+    client_ip = request.client.host if request.client else "unknown"
+    if client_ip not in IP_WHITELIST and "*" not in IP_WHITELIST:
+        raise HTTPException(status_code=403, detail="IP address not whitelisted")
+    return True
+
+def security_dependencies(request: Request):
+    """Combined security dependencies"""
+    check_ip_whitelist(request)
+    check_rate_limit(request)
+    return True
+
+# ============================================================================
+# Custom Features: Templates, Reminders, Tags
+# ============================================================================
+
+class TemplateRequest(BaseModel):
+    name: str
+    content: str
+
+class ReminderRequest(BaseModel):
+    chat_id: str
+    message_id: int
+    reminder_time: str  # ISO datetime
+    note: Optional[str] = None
+
+class TagRequest(BaseModel):
+    message_id: int
+    tags: List[str]
+
+@app.post("/api/templates")
+async def create_template(template: TemplateRequest, request: Request):
+    """Create a message template"""
+    check_client_connected()
+    check_rate_limit(request)
+    templates_store[template.name] = {"content": template.content, "created": datetime.now().isoformat()}
+    return {"status": "success", "template": template.name}
+
+@app.get("/api/templates")
+async def list_templates(request: Request):
+    """List all templates"""
+    check_rate_limit(request)
+    return {"templates": list(templates_store.keys())}
+
+@app.get("/api/templates/{name}")
+async def get_template(name: str, request: Request):
+    """Get a template by name"""
+    check_rate_limit(request)
+    if name not in templates_store:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return templates_store[name]
+
+@app.post("/api/templates/{name}/send")
+async def send_template(name: str, chat_id: str, request: Request):
+    """Send a template message"""
+    check_client_connected()
+    check_rate_limit(request)
+    if name not in templates_store:
+        raise HTTPException(status_code=404, detail="Template not found")
+    template = templates_store[name]
+    entity = await get_entity_safe(chat_id)
+    message = await client.send_message(entity, template["content"])
+    return {"status": "success", "message_id": message.id}
+
+@app.post("/api/reminders")
+async def create_reminder(reminder: ReminderRequest, request: Request):
+    """Create a message reminder"""
+    check_client_connected()
+    check_rate_limit(request)
+    reminder_data = {
+        "id": len(reminders_store),
+        "chat_id": reminder.chat_id,
+        "message_id": reminder.message_id,
+        "reminder_time": reminder.reminder_time,
+        "note": reminder.note,
+        "created": datetime.now().isoformat()
+    }
+    reminders_store.append(reminder_data)
+    return {"status": "success", "reminder_id": reminder_data["id"]}
+
+@app.get("/api/reminders")
+async def list_reminders(request: Request):
+    """List all reminders"""
+    check_rate_limit(request)
+    return {"reminders": reminders_store}
+
+@app.post("/api/messages/{message_id}/tags")
+async def add_tags(message_id: int, request_tag: TagRequest, http_request: Request):
+    """Add tags to a message"""
+    check_rate_limit(http_request)
+    msg_key = str(message_id)
+    if msg_key not in tags_store:
+        tags_store[msg_key] = []
+    tags_store[msg_key].extend(request_tag.tags)
+    tags_store[msg_key] = list(set(tags_store[msg_key]))  # Remove duplicates
+    return {"status": "success", "tags": tags_store[msg_key]}
+
+@app.get("/api/messages/{message_id}/tags")
+async def get_tags(message_id: int, request: Request):
+    """Get tags for a message"""
+    check_rate_limit(request)
+    msg_key = str(message_id)
+    return {"tags": tags_store.get(msg_key, [])}
+
+@app.get("/api/tags")
+async def list_all_tags(request: Request):
+    """List all tags"""
+    check_rate_limit(request)
+    all_tags = set()
+    for tags in tags_store.values():
+        all_tags.update(tags)
+    return {"tags": sorted(list(all_tags))}
+
+# ============================================================================
 # WebSocket for Real-time Updates
 # ============================================================================
 
