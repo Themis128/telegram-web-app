@@ -703,6 +703,21 @@ async def get_messages(chat_id: str, limit: int = 20, offset_id: int = 0):
                 # Check for poll
                 elif isinstance(media, types.MessageMediaPoll):
                     message_data["media_category"] = "poll"
+                # Check for webpage/link preview
+                elif isinstance(media, types.MessageMediaWebPage):
+                    message_data["media_category"] = "webpage"
+                    webpage = media.webpage
+                    if isinstance(webpage, types.WebPage):
+                        message_data["webpage_url"] = webpage.url
+                        message_data["webpage_title"] = getattr(webpage, 'title', None) or ""
+                        message_data["webpage_description"] = getattr(webpage, 'description', None) or ""
+                        message_data["webpage_site_name"] = getattr(webpage, 'site_name', None) or ""
+                        
+                        # Get thumbnail if available
+                        if hasattr(webpage, 'photo') and webpage.photo:
+                            message_data["webpage_thumb_url"] = f"/api/files/preview/{chat_id}/{msg.id}?thumb=true"
+                        else:
+                            message_data["webpage_thumb_url"] = None
                 else:
                     message_data["media_category"] = "unknown"
 
@@ -710,6 +725,17 @@ async def get_messages(chat_id: str, limit: int = 20, offset_id: int = 0):
                 message_data["media_message_id"] = msg.id
             else:
                 message_data["has_media"] = False
+            
+            # Detect URLs in message text for link previews (even without webpage media)
+            import re
+            url_pattern = r'https?://[^\s<>"{}|\\^`\[\]]+[^\s<>"{}|\\^`\[\].,;:!?]'
+            urls = re.findall(url_pattern, message_data.get("text", ""))
+            if urls and not message_data.get("has_media"):
+                # Found URL in text, mark for link preview
+                message_data["has_link"] = True
+                message_data["link_url"] = urls[0]  # Use first URL found
+            else:
+                message_data["has_link"] = False
 
             message_list.append(message_data)
 
@@ -993,7 +1019,7 @@ async def download_media(chat_id: str, message_id: int):
         # Use temporary file for large files to avoid memory issues
         file_bytes = None
         temp_file = None
-        
+
         try:
             # For very large files (>50MB), use temporary file
             if file_size and file_size > 50 * 1024 * 1024:  # 50MB
@@ -1002,10 +1028,10 @@ async def download_media(chat_id: str, message_id: int):
                 temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=f"_{filename}")
                 temp_path = temp_file.name
                 temp_file.close()
-                
+
                 # Download to file
                 await client.download_media(message, file=temp_path)
-                
+
                 # Stream from file
                 async def generate():
                     """Stream file from disk in chunks"""
@@ -1021,7 +1047,7 @@ async def download_media(chat_id: str, message_id: int):
                         os.unlink(temp_path)
                     except:
                         pass
-                
+
                 headers = {
                     "Content-Disposition": f'attachment; filename="{filename}"',
                     "Content-Type": media_type,
@@ -1029,7 +1055,7 @@ async def download_media(chat_id: str, message_id: int):
                 }
                 if file_size:
                     headers["Content-Length"] = str(file_size)
-                
+
                 return StreamingResponse(
                     generate(),
                     media_type=media_type,
@@ -1038,14 +1064,14 @@ async def download_media(chat_id: str, message_id: int):
             else:
                 # For smaller files, download to memory
                 file_bytes = await client.download_media(message, file=bytes)
-                
+
                 # Stream in chunks for better memory management
                 async def generate():
                     """Stream file in chunks"""
                     chunk_size = 1024 * 1024  # 1MB chunks
                     for i in range(0, len(file_bytes), chunk_size):
                         yield file_bytes[i:i + chunk_size]
-                
+
                 headers = {
                     "Content-Disposition": f'attachment; filename="{filename}"',
                     "Content-Type": media_type,
@@ -1055,7 +1081,7 @@ async def download_media(chat_id: str, message_id: int):
                     headers["Content-Length"] = str(len(file_bytes))
                 elif file_bytes:
                     headers["Content-Length"] = str(len(file_bytes))
-                
+
                 return StreamingResponse(
                     generate(),
                     media_type=media_type,
@@ -1101,6 +1127,28 @@ async def preview_media(chat_id: str, message_id: int):
 
         if not message.media:
             raise HTTPException(status_code=404, detail="Message has no media")
+        
+        # Handle webpage thumbnail
+        if isinstance(message.media, types.MessageMediaWebPage):
+            webpage = message.media.webpage
+            if isinstance(webpage, types.WebPage) and hasattr(webpage, 'photo') and webpage.photo:
+                # Download webpage photo thumbnail
+                try:
+                    file_bytes = await client.download_media(webpage.photo, file=bytes, thumb=True)
+                    if not file_bytes:
+                        raise HTTPException(status_code=500, detail="Failed to download webpage thumbnail")
+                    return Response(
+                        content=file_bytes,
+                        media_type="image/jpeg",
+                        headers={
+                            "Content-Disposition": f'inline; filename="webpage_thumb_{message_id}.jpg"',
+                            "Cache-Control": "public, max-age=3600",
+                            "Access-Control-Allow-Origin": "*"
+                        }
+                    )
+                except Exception as e:
+                    print(f"Error downloading webpage thumbnail: {e}")
+                    raise HTTPException(status_code=500, detail=f"Failed to download webpage thumbnail: {str(e)}")
 
         # Download to memory
         try:

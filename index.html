@@ -347,6 +347,16 @@
             color: var(--tg-text-primary);
             margin-bottom: 4px;
         }
+        
+        .message-link {
+            color: var(--tg-blue);
+            text-decoration: none;
+            word-break: break-all;
+        }
+        
+        .message-link:hover {
+            text-decoration: underline;
+        }
 
         .message-time {
             font-size: 11px;
@@ -502,6 +512,108 @@
             display: flex;
             align-items: center;
             gap: 12px;
+        }
+        
+        /* Link Preview / Webpage */
+        .message-media-webpage {
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 8px 0;
+            text-decoration: none;
+            color: inherit;
+            background: rgba(0, 0, 0, 0.02);
+            transition: background 0.2s, transform 0.1s;
+        }
+        
+        .message-media-webpage:hover {
+            background: rgba(0, 0, 0, 0.05);
+            transform: translateY(-1px);
+        }
+        
+        .webpage-thumb {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+        
+        .webpage-info {
+            padding: 12px;
+        }
+        
+        .webpage-site {
+            font-size: 12px;
+            color: var(--tg-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        
+        .webpage-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--tg-text-primary);
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+        
+        .webpage-description {
+            font-size: 13px;
+            color: var(--tg-text-secondary);
+            line-height: 1.4;
+            margin-top: 4px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .link-preview {
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 8px 0;
+            background: rgba(0, 0, 0, 0.02);
+            transition: background 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .link-preview:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        
+        .link-preview-content {
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .link-preview-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        
+        .link-preview-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .link-preview-url {
+            font-size: 13px;
+            color: var(--tg-blue);
+            word-break: break-all;
+            text-decoration: none;
+        }
+        
+        .link-preview-url:hover {
+            text-decoration: underline;
         }
 
         /* Modals */
@@ -894,6 +1006,18 @@
 
         .notification.show {
             display: block;
+        }
+
+        .notification.progress {
+            background: var(--tg-blue);
+        }
+
+        .notification.success {
+            background: #27ae60;
+        }
+
+        .notification.error {
+            background: #e74c3c;
         }
 
         @keyframes slideIn {
@@ -1528,6 +1652,23 @@
                             </div>
                         `;
                         break;
+                    case 'webpage':
+                        const webpageUrl = msg.webpage_url || '';
+                        const webpageTitle = msg.webpage_title || 'Link';
+                        const webpageDesc = msg.webpage_description || '';
+                        const webpageSite = msg.webpage_site_name || new URL(webpageUrl).hostname.replace('www.', '');
+                        const webpageThumb = msg.webpage_thumb_url || '';
+                        mediaHTML = `
+                            <a href="${webpageUrl}" target="_blank" class="message-media-webpage">
+                                ${webpageThumb ? `<img src="${webpageThumb}" alt="Preview" class="webpage-thumb" onerror="this.style.display='none'">` : ''}
+                                <div class="webpage-info">
+                                    <div class="webpage-site">${webpageSite}</div>
+                                    <div class="webpage-title">${webpageTitle}</div>
+                                    ${webpageDesc ? `<div class="webpage-description">${webpageDesc}</div>` : ''}
+                                </div>
+                            </a>
+                        `;
+                        break;
                     default:
                         mediaHTML = `
                             <div class="message-media-document" onclick="downloadFile('${downloadUrl}', '${msg.file_name || 'file'}')">
@@ -1548,7 +1689,8 @@
                     <button class="action-btn" onclick="reactToMessage(' + msg.id + ')">👍</button>
                 </div>
                 ${mediaHTML}
-                ${msg.text ? `<div class="message-text">${msg.text}</div>` : ''}
+                ${msg.text ? `<div class="message-text">${formatMessageText(msg.text, msg.has_link ? msg.link_url : null)}</div>` : ''}
+                ${msg.has_link && !msg.has_media ? renderLinkPreview(msg.link_url) : ''}
                 <div class="message-time">${time}</div>
             `;
             container.appendChild(messageDiv);
@@ -1703,6 +1845,43 @@
                 'apk': '📱'
             };
             return icons[ext] || '📎';
+        }
+        
+        // Format message text with clickable links
+        function formatMessageText(text, linkUrl) {
+            if (!text) return '';
+            
+            // If there's a link URL, replace it with a clickable link
+            if (linkUrl) {
+                const urlPattern = new RegExp(linkUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                return text.replace(urlPattern, `<a href="${linkUrl}" target="_blank" class="message-link">${linkUrl}</a>`);
+            }
+            
+            // Otherwise, detect and make all URLs clickable
+            const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+[^\s<>"{}|\\^`\[\].,;:!?])/gi;
+            return text.replace(urlRegex, '<a href="$1" target="_blank" class="message-link">$1</a>');
+        }
+        
+        // Render link preview for URLs without Telegram webpage preview
+        function renderLinkPreview(url) {
+            if (!url) return '';
+            
+            try {
+                const urlObj = new URL(url);
+                const hostname = urlObj.hostname.replace('www.', '');
+                return `
+                    <a href="${url}" target="_blank" class="link-preview">
+                        <div class="link-preview-content">
+                            <div class="link-preview-icon">🔗</div>
+                            <div class="link-preview-info">
+                                <div class="link-preview-url">${url}</div>
+                            </div>
+                        </div>
+                    </a>
+                `;
+            } catch (e) {
+                return '';
+            }
         }
 
         // Modal Functions
@@ -2190,7 +2369,7 @@
 
         // Download progress tracking
         let downloadProgress = {};
-        
+
         function formatBytes(bytes) {
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
@@ -2198,7 +2377,7 @@
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
         }
-        
+
         function formatTime(seconds) {
             if (seconds < 60) return Math.round(seconds) + 's';
             const mins = Math.floor(seconds / 60);
@@ -2208,17 +2387,17 @@
 
         async function downloadFile(url, filename) {
             const downloadId = `${url}_${Date.now()}`;
-            
+
             try {
                 // Show initial notification
                 showNotification(`Preparing download: ${filename}...`, 2000);
-                
+
                 // Use XMLHttpRequest for progress tracking
                 return new Promise((resolve, reject) => {
                     const xhr = new XMLHttpRequest();
                     xhr.open('GET', url, true);
                     xhr.responseType = 'blob';
-                    
+
                     // Track download progress
                     xhr.addEventListener('progress', (event) => {
                         if (event.lengthComputable) {
@@ -2227,7 +2406,7 @@
                             const total = formatBytes(event.total);
                             const speed = event.loaded / ((Date.now() - downloadProgress[downloadId]?.startTime) / 1000);
                             const remaining = (event.total - event.loaded) / speed;
-                            
+
                             if (!downloadProgress[downloadId]) {
                                 downloadProgress[downloadId] = {
                                     startTime: Date.now(),
@@ -2235,13 +2414,13 @@
                                     lastLoaded: 0
                                 };
                             }
-                            
+
                             downloadProgress[downloadId].lastUpdate = Date.now();
                             downloadProgress[downloadId].lastLoaded = event.loaded;
-                            
+
                     // Update notification every 500ms to avoid spam
                     const now = Date.now();
-                    if (!downloadProgress[downloadId].lastNotification || 
+                    if (!downloadProgress[downloadId].lastNotification ||
                         now - downloadProgress[downloadId].lastNotification > 500) {
                         const speedStr = formatBytes(speed) + '/s';
                         const etaStr = remaining > 0 && remaining < 3600 ? ` (ETA: ${formatTime(remaining)})` : '';
@@ -2252,7 +2431,7 @@
                     }
                         }
                     });
-                    
+
                     xhr.addEventListener('load', () => {
                         if (xhr.status === 200) {
                             const blob = xhr.response;
@@ -2264,10 +2443,10 @@
                             a.click();
                             document.body.removeChild(a);
                             window.URL.revokeObjectURL(downloadUrl);
-                            
+
                             // Clean up progress tracking
                             delete downloadProgress[downloadId];
-                            
+
                             const notification = document.getElementById('notification');
                             notification.textContent = `✓ Download complete: ${filename}`;
                             notification.className = 'notification show success';
@@ -2283,7 +2462,7 @@
                             reject(new Error(`Download failed: ${xhr.status}`));
                         }
                     });
-                    
+
                     xhr.addEventListener('error', () => {
                         delete downloadProgress[downloadId];
                         const notification = document.getElementById('notification');
@@ -2292,13 +2471,13 @@
                         setTimeout(() => notification.classList.remove('show'), 5000);
                         reject(new Error('Network error'));
                     });
-                    
+
                     xhr.addEventListener('abort', () => {
                         delete downloadProgress[downloadId];
                         showNotification('Download cancelled', 3000);
                         reject(new Error('Download cancelled'));
                     });
-                    
+
                     // Start download
                     downloadProgress[downloadId] = {
                         startTime: Date.now(),
