@@ -267,7 +267,7 @@ while True:
     # Get messages
     response = requests.get(f"{API_URL}/api/messages/chat_id")
     messages = response.json()["messages"]
-    
+
     # Process and respond
     for msg in messages:
         if "help" in msg["text"].lower():
@@ -275,7 +275,7 @@ while True:
                 "chat_id": msg["chat_id"],
                 "message": "Here's help..."
             })
-    
+
     time.sleep(5)
 ```
 
@@ -287,7 +287,7 @@ import requests
 def sync_to_crm(chat_id, message):
     # Send to CRM
     crm_api.post_message(chat_id, message)
-    
+
     # Also send to Telegram
     requests.post("http://localhost:8001/api/messages/send", json={
         "chat_id": chat_id,
@@ -326,4 +326,3 @@ def sync_to_crm(chat_id, message):
 4. **Add Custom Features** - Extend the app
 
 **Everything is ready - you just need to use it or build on top of it!**
-

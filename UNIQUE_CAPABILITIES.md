@@ -318,4 +318,3 @@ This app gives you **complete control** over your Telegram experience with capab
 ---
 
 *Made with ❤️ using Telegram MTProto API*
-

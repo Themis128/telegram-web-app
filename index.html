@@ -347,13 +347,13 @@
             color: var(--tg-text-primary);
             margin-bottom: 4px;
         }
-        
+
         .message-link {
             color: var(--tg-blue);
             text-decoration: none;
             word-break: break-all;
         }
-        
+
         .message-link:hover {
             text-decoration: underline;
         }
@@ -513,7 +513,7 @@
             align-items: center;
             gap: 12px;
         }
-        
+
         /* Link Preview / Webpage */
         .message-media-webpage {
             display: flex;
@@ -527,23 +527,23 @@
             background: rgba(0, 0, 0, 0.02);
             transition: background 0.2s, transform 0.1s;
         }
-        
+
         .message-media-webpage:hover {
             background: rgba(0, 0, 0, 0.05);
             transform: translateY(-1px);
         }
-        
+
         .webpage-thumb {
             width: 100%;
             max-height: 200px;
             object-fit: cover;
             display: block;
         }
-        
+
         .webpage-info {
             padding: 12px;
         }
-        
+
         .webpage-site {
             font-size: 12px;
             color: var(--tg-text-secondary);
@@ -551,7 +551,7 @@
             letter-spacing: 0.5px;
             margin-bottom: 4px;
         }
-        
+
         .webpage-title {
             font-weight: 600;
             font-size: 14px;
@@ -559,7 +559,7 @@
             margin-bottom: 4px;
             line-height: 1.4;
         }
-        
+
         .webpage-description {
             font-size: 13px;
             color: var(--tg-text-secondary);
@@ -570,7 +570,7 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
-        
+
         .link-preview {
             display: flex;
             flex-direction: column;
@@ -583,35 +583,35 @@
             text-decoration: none;
             color: inherit;
         }
-        
+
         .link-preview:hover {
             background: rgba(0, 0, 0, 0.05);
         }
-        
+
         .link-preview-content {
             padding: 12px;
             display: flex;
             align-items: center;
             gap: 12px;
         }
-        
+
         .link-preview-icon {
             font-size: 24px;
             flex-shrink: 0;
         }
-        
+
         .link-preview-info {
             flex: 1;
             min-width: 0;
         }
-        
+
         .link-preview-url {
             font-size: 13px;
             color: var(--tg-blue);
             word-break: break-all;
             text-decoration: none;
         }
-        
+
         .link-preview-url:hover {
             text-decoration: underline;
         }
@@ -1654,15 +1654,31 @@
                         break;
                     case 'webpage':
                         const webpageUrl = msg.webpage_url || '';
-                        const webpageTitle = msg.webpage_title || 'Link';
-                        const webpageDesc = msg.webpage_description || '';
-                        const webpageSite = msg.webpage_site_name || new URL(webpageUrl).hostname.replace('www.', '');
-                        const webpageThumb = msg.webpage_thumb_url || '';
+                        let webpageTitle = msg.webpage_title || '';
+                        let webpageDesc = msg.webpage_description || '';
+                        let webpageSite = msg.webpage_site_name || '';
+
+                        // Extract site name from URL if not provided
+                        if (!webpageSite && webpageUrl) {
+                            try {
+                                const urlObj = new URL(webpageUrl);
+                                webpageSite = urlObj.hostname.replace('www.', '');
+                            } catch (e) {
+                                webpageSite = 'Link';
+                            }
+                        }
+
+                        // If no title, use URL as fallback
+                        if (!webpageTitle) {
+                            webpageTitle = webpageUrl.length > 50 ? webpageUrl.substring(0, 50) + '...' : webpageUrl;
+                        }
+
+                        const webpageThumb = msg.webpage_thumb_url ? `${API_URL}${msg.webpage_thumb_url}` : '';
                         mediaHTML = `
-                            <a href="${webpageUrl}" target="_blank" class="message-media-webpage">
+                            <a href="${webpageUrl}" target="_blank" class="message-media-webpage" onclick="event.stopPropagation()">
                                 ${webpageThumb ? `<img src="${webpageThumb}" alt="Preview" class="webpage-thumb" onerror="this.style.display='none'">` : ''}
                                 <div class="webpage-info">
-                                    <div class="webpage-site">${webpageSite}</div>
+                                    ${webpageSite ? `<div class="webpage-site">${webpageSite}</div>` : ''}
                                     <div class="webpage-title">${webpageTitle}</div>
                                     ${webpageDesc ? `<div class="webpage-description">${webpageDesc}</div>` : ''}
                                 </div>
@@ -1846,36 +1862,36 @@
             };
             return icons[ext] || '📎';
         }
-        
+
         // Format message text with clickable links
         function formatMessageText(text, linkUrl) {
             if (!text) return '';
-            
+
             // If there's a link URL, replace it with a clickable link
             if (linkUrl) {
                 const urlPattern = new RegExp(linkUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
                 return text.replace(urlPattern, `<a href="${linkUrl}" target="_blank" class="message-link">${linkUrl}</a>`);
             }
-            
+
             // Otherwise, detect and make all URLs clickable
             const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+[^\s<>"{}|\\^`\[\].,;:!?])/gi;
             return text.replace(urlRegex, '<a href="$1" target="_blank" class="message-link">$1</a>');
         }
-        
+
         // Render link preview for URLs without Telegram webpage preview
         function renderLinkPreview(url) {
             if (!url) return '';
-            
+
             try {
                 const urlObj = new URL(url);
                 const hostname = urlObj.hostname.replace('www.', '');
+                const displayUrl = url.length > 60 ? url.substring(0, 60) + '...' : url;
+
                 return `
-                    <a href="${url}" target="_blank" class="link-preview">
-                        <div class="link-preview-content">
-                            <div class="link-preview-icon">🔗</div>
-                            <div class="link-preview-info">
-                                <div class="link-preview-url">${url}</div>
-                            </div>
+                    <a href="${url}" target="_blank" class="message-media-webpage" onclick="event.stopPropagation()">
+                        <div class="webpage-info">
+                            <div class="webpage-site">${hostname}</div>
+                            <div class="webpage-title">${displayUrl}</div>
                         </div>
                     </a>
                 `;
