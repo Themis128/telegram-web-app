@@ -1136,7 +1136,7 @@ async def get_blocked_users():
             for user in result.users:
                 blocked_list.append({
                     "id": user.id,
-                    "first_name": getattr(user, 'first_name', ''),
+                    "first_name": getattr(user, 'first_name', '') or "",
                     "last_name": getattr(user, 'last_name', '') or "",
                     "username": getattr(user, 'username', '') or ""
                 })
